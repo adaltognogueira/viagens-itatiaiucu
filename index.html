@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0F1923">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Viagens">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Viagens Itatiaiuçu</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg:#0F1923;--bg2:#162030;--bg3:#1E2D3D;--card:#1A2535;--border:#2A3F55;
+  --accent:#00C896;--accent2:#0099FF;--warn:#FF8C42;--danger:#FF4C6A;
+  --text:#E8F0F8;--text2:#7A9BB5;--text3:#4A6880;
+  --font:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;--radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* NAV */
+.nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 12px;display:flex;align-items:center;position:sticky;top:0;z-index:100;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav-brand{font-size:.95rem;font-weight:800;color:var(--accent);white-space:nowrap;margin-right:16px;padding:15px 0;letter-spacing:-.02em;flex-shrink:0}
+.nav-brand span{color:var(--text2);font-weight:400}
+.nav-tab{padding:15px 12px;border:none;background:none;color:var(--text2);font-family:var(--font);font-size:.82rem;font-weight:500;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;flex-shrink:0}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+
+/* PÁGINAS */
+.page{display:none;padding:18px 14px;max-width:960px;margin:0 auto}
+.page.active{display:block}
+.page-header{margin-bottom:18px}
+.page-header h2{font-size:1.35rem;font-weight:800;letter-spacing:-.02em}
+.page-header p{color:var(--text2);font-size:.83rem;margin-top:4px}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.card-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title::before{content:'';width:3px;height:13px;background:var(--accent);border-radius:2px}
+
+/* MONTH BAR */
+.month-bar{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;flex-wrap:wrap}
+.month-bar select,.sel-std{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:.9rem;font-weight:600;padding:6px 10px;border-radius:8px;outline:none;cursor:pointer}
+.month-bar label{color:var(--text2);font-size:.8rem;white-space:nowrap}
+
+/* BOTÕES */
+.btn-sm{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:.78rem;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:all .15s}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm.accent{background:var(--accent);color:#000;border-color:var(--accent)}
+.btn-sm.accent:hover{opacity:.85}
+.btn-sm.blue{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+.btn-sm.blue:hover{opacity:.85}
+.btn-sm.danger{border-color:var(--danger);color:var(--danger)}
+.btn-sm.danger:hover{background:var(--danger);color:#fff}
+.btn-sm.warn{border-color:var(--warn);color:var(--warn)}
+.btn-sm.warn:hover{background:var(--warn);color:#000}
+
+/* TABELA VIAGENS */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.viagens{width:100%;border-collapse:collapse;font-size:.8rem;min-width:580px}
+table.viagens th{background:var(--bg3);color:var(--text2);padding:7px 5px;text-align:center;font-weight:600;border:1px solid var(--border);white-space:nowrap;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+table.viagens th.col-day{text-align:left;padding-left:8px;min-width:85px}
+table.viagens td{border:1px solid var(--border);padding:4px 3px;text-align:center;vertical-align:middle}
+table.viagens td.col-day{font-family:var(--mono);font-size:.75rem;color:var(--text2);text-align:left;padding-left:8px;white-space:nowrap;background:var(--bg2)}
+table.viagens td.col-day.today{color:var(--accent);font-weight:700}
+table.viagens td.col-lock{background:var(--bg2);width:28px}
+table.viagens tr.locked td{opacity:.55}
+table.viagens tr.locked td.col-day{opacity:1}
+table.viagens tr:hover td{background:rgba(0,200,150,.04)}
+table.viagens tr:hover td.col-day,table.viagens tr:hover td.col-lock{background:var(--bg2)}
+
+/* SIGLA BTN */
+.sigla-btn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:26px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text3);font-family:var(--mono);font-size:.72rem;font-weight:500;cursor:pointer;transition:all .15s;user-select:none}
+.sigla-btn:active{transform:scale(.91)}
+.sigla-btn.locked{cursor:not-allowed;opacity:.5}
+
+/* Cores dinâmicas dos percursos — geradas via JS */
+.lock-btn{background:none;border:none;cursor:pointer;font-size:.9rem;padding:2px;transition:transform .15s;display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+.lock-btn:hover{transform:scale(1.2)}
+
+/* CAR SELECT */
+.car-select{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:3px 5px;border-radius:6px;outline:none;cursor:pointer;width:68px}
+
+/* PAINEL */
+.resumo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:11px;margin-bottom:18px}
+.resumo-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px}
+.resumo-card .r-nome{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:8px}
+.resumo-card .r-total{font-size:1.4rem;font-weight:800;color:var(--accent);letter-spacing:-.02em}
+.resumo-card .r-total small{font-size:.72rem;color:var(--text2);font-weight:400}
+.resumo-card .r-detail{font-size:.73rem;color:var(--text2);margin-top:5px;line-height:1.7}
+.r-sigla{display:inline-block;padding:1px 6px;border-radius:4px;font-family:var(--mono);font-size:.68rem;font-weight:700;margin-right:3px}
+
+/* ACUMULADO */
+.periodo-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:14px}
+.periodo-bar label{color:var(--text2);font-size:.8rem;white-space:nowrap}
+
+/* CONFIG */
+.config-section{margin-bottom:22px}
+.config-section h3{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:11px;border-bottom:1px solid var(--border);padding-bottom:7px}
+.config-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(42,63,85,.5)}
+.config-row:last-child{border-bottom:none}
+.config-row label{flex:1;font-size:.86rem;color:var(--text2)}
+.config-row label strong{color:var(--text);display:block;font-size:.9rem}
+.config-input{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:.86rem;padding:7px 10px;border-radius:8px;outline:none;width:120px;transition:border-color .2s}
+.config-input:focus{border-color:var(--accent)}
+.tag-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px}
+.tag-item{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 11px;font-size:.8rem}
+.tag-del{cursor:pointer;color:var(--danger);font-size:.88rem;font-weight:700;transition:transform .15s}
+.tag-del:hover{transform:scale(1.2)}
+.add-row{display:flex;gap:8px;flex-wrap:wrap}
+.add-row input{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:.86rem;padding:7px 11px;border-radius:8px;outline:none;flex:1;min-width:110px}
+.add-row input:focus{border-color:var(--accent)}
+
+/* EXPORT */
+.export-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btn-export{display:flex;align-items:center;gap:8px;padding:11px 18px;border-radius:10px;font-family:var(--font);font-size:.87rem;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-excel{background:#1D6F42;color:white}
+.btn-excel:hover{background:#25894F;transform:translateY(-1px);box-shadow:0 4px 16px rgba(29,111,66,.4)}
+.btn-pdf{background:#C0392B;color:white}
+.btn-pdf:hover{background:#E74C3C;transform:translateY(-1px);box-shadow:0 4px 16px rgba(192,57,43,.4)}
+.btn-drive{background:#1A73E8;color:white}
+.btn-drive:hover{background:#1967D2;transform:translateY(-1px);box-shadow:0 4px 16px rgba(26,115,232,.4)}
+
+/* LEGEND */
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:.76rem;color:var(--text2)}
+.legend-dot{width:9px;height:9px;border-radius:3px}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;width:92%;max-width:380px;animation:slideUp .2s ease}
+@keyframes slideUp{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal h3{font-size:.98rem;font-weight:700;margin-bottom:5px}
+.modal p{font-size:.8rem;color:var(--text2);margin-bottom:14px}
+.modal-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.modal-btn{flex:1;min-width:65px;padding:11px 8px;border-radius:10px;border:2px solid var(--border);background:var(--bg3);color:var(--text);font-family:var(--font);font-size:.85rem;font-weight:700;cursor:pointer;transition:all .15s;text-align:center}
+.modal-btn:hover{transform:scale(1.03)}
+.modal-btn.val-clear{color:var(--text2)}
+.modal-btn.val-clear:hover{background:var(--bg2)}
+
+/* GOOGLE DRIVE INFO */
+.drive-info{background:rgba(26,115,232,.1);border:1px solid rgba(26,115,232,.3);border-radius:10px;padding:12px 16px;font-size:.82rem;color:#7AAFFF;margin-bottom:14px;line-height:1.6}
+.drive-info strong{color:#90C4FF}
+
+/* ANOS */
+.anos-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.ano-btn{padding:8px 18px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);font-family:var(--mono);font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.ano-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,200,150,.1)}
+.ano-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--accent);color:#000;font-weight:600;font-size:.83rem;padding:9px 20px;border-radius:30px;z-index:999;transition:transform .3s;white-space:nowrap;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ACUMULADO TABLE */
+.acum-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.acum-table th{background:var(--bg3);color:var(--text2);padding:7px 10px;text-align:left;border:1px solid var(--border);font-size:.74rem;text-transform:uppercase}
+.acum-table td{border:1px solid var(--border);padding:7px 10px}
+.acum-table tr:last-child td{background:rgba(0,200,150,.08);font-weight:700;color:var(--accent)}
+
+/* PERCURSO COLOR SWATCH */
+.color-swatch{width:22px;height:22px;border-radius:5px;display:inline-block;border:1.5px solid rgba(255,255,255,.2)}
+
+@media(max-width:480px){
+  .resumo-grid{grid-template-columns:repeat(2,1fr)}
+  .page{padding:12px 10px}
+  .sigla-btn{width:34px;height:24px;font-size:.68rem}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">🚗 Viagens <span>Itatiaiuçu</span></div>
+  <button class="nav-tab active" onclick="showPage('registro',this)">📅 Registro</button>
+  <button class="nav-tab" onclick="showPage('painel',this)">📊 Painel</button>
+  <button class="nav-tab" onclick="showPage('config',this)">⚙️ Config</button>
+  <button class="nav-tab" onclick="showPage('relatorio',this)">📄 Relatório</button>
+</nav>
+
+<!-- MODAL SIGLA -->
+<div class="modal-overlay" id="modal-sigla">
+  <div class="modal">
+    <h3 id="modal-title">Selecionar destino</h3>
+    <p id="modal-sub">Escolha o percurso da viagem</p>
+    <div class="modal-btns" id="modal-btns"></div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRM -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal">
+    <h3 id="confirm-title">Confirmar</h3>
+    <p id="confirm-msg"></p>
+    <div class="modal-btns">
+      <div class="modal-btn" onclick="confirmCancel()" style="color:var(--text2)">Cancelar</div>
+      <div class="modal-btn" id="confirm-ok" style="border-color:var(--danger);color:var(--danger)">Confirmar</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══════ REGISTRO ══════ -->
+<div class="page active" id="page-registro">
+  <div class="page-header">
+    <h2>Registro de Viagens</h2>
+    <p>Toque na célula para marcar ida (I) ou volta (V)</p>
+  </div>
+  <div class="month-bar">
+    <label>Mês:</label>
+    <select id="sel-mes" onchange="renderTabela()"></select>
+    <button class="btn-sm" onclick="mesAnterior()">‹</button>
+    <button class="btn-sm" onclick="proximoMes()">›</button>
+    <button class="btn-sm accent" onclick="hojeVisible()">Hoje</button>
+  </div>
+  <div class="legend" id="legenda-percursos"></div>
+  <div class="card">
+    <div class="table-wrap">
+      <table class="viagens" id="tabela-viagens"></table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PAINEL ══════ -->
+<div class="page" id="page-painel">
+  <div class="page-header">
+    <h2>Painel de Resumo</h2>
+    <p>Totais por passageiro e acumulado por período</p>
+  </div>
+
+  <div class="month-bar">
+    <label>Mês único:</label>
+    <select id="sel-mes-painel" onchange="renderPainel()"></select>
+    <button class="btn-sm" onclick="renderPainel()">🔄</button>
+  </div>
+
+  <div id="resumo-cards"></div>
+  <div class="card"><div class="card-title">Total por Destino</div><div id="resumo-destinos"></div></div>
+
+  <!-- ACUMULADO POR PERÍODO -->
+  <div class="card" style="margin-top:20px">
+    <div class="card-title">Acumulado por Período</div>
+    <div class="periodo-bar">
+      <label>De:</label>
+      <select id="sel-de" class="sel-std"></select>
+      <label>Até:</label>
+      <select id="sel-ate" class="sel-std"></select>
+      <button class="btn-sm accent" onclick="renderAcumulado()">Calcular</button>
+    </div>
+    <div id="acumulado-resultado"></div>
+  </div>
+</div>
+
+<!-- ══════ CONFIG ══════ -->
+<div class="page" id="page-config">
+  <div class="page-header">
+    <h2>Configurações</h2>
+    <p>Passageiros, carros, percursos, anos e backup</p>
+  </div>
+  <div class="card">
+
+    <!-- ANOS -->
+    <div class="config-section">
+      <h3>📅 Anos Disponíveis</h3>
+      <div class="anos-grid" id="lista-anos"></div>
+      <div class="add-row">
+        <input type="number" id="novo-ano" placeholder="Ex: 2027" min="2020" max="2099" style="width:130px;flex:none">
+        <button class="btn-sm accent" onclick="adicionarAno()">+ Criar Ano</button>
+      </div>
+    </div>
+
+    <!-- PASSAGEIROS -->
+    <div class="config-section">
+      <h3>👤 Passageiros</h3>
+      <div class="tag-grid" id="lista-passageiros"></div>
+      <div class="add-row">
+        <input type="text" id="novo-passageiro" placeholder="Nome completo" maxlength="20">
+        <input type="text" id="nova-inicial" placeholder="Sigla (ex: SU)" maxlength="4" style="width:90px;flex:none">
+        <button class="btn-sm accent" onclick="adicionarPassageiro()">+ Adicionar</button>
+      </div>
+    </div>
+
+    <!-- CARROS -->
+    <div class="config-section">
+      <h3>🚗 Carros</h3>
+      <div class="tag-grid" id="lista-carros"></div>
+      <div class="add-row">
+        <input type="text" id="novo-carro" placeholder="Nome ou placa do carro" maxlength="20">
+        <button class="btn-sm accent" onclick="adicionarCarro()">+ Adicionar</button>
+      </div>
+    </div>
+
+    <!-- PERCURSOS / VALORES -->
+    <div class="config-section">
+      <h3>📍 Percursos e Valores</h3>
+      <p style="font-size:.8rem;color:var(--text2);margin-bottom:12px">Cada percurso tem uma sigla, nome e valor. As cores são atribuídas automaticamente.</p>
+      <div id="lista-percursos"></div>
+      <div style="margin-top:12px">
+        <div class="add-row">
+          <input type="text" id="novo-perc-sigla" placeholder="Sigla (ex: BH)" maxlength="4" style="width:80px;flex:none">
+          <input type="text" id="novo-perc-nome"  placeholder="Nome do percurso" maxlength="25">
+          <input type="number" id="novo-perc-valor" placeholder="Valor R$" step="0.01" style="width:100px;flex:none">
+          <button class="btn-sm accent" onclick="adicionarPercurso()">+ Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOOGLE DRIVE -->
+    <div class="config-section">
+      <h3>☁️ Backup Google Drive</h3>
+      <div class="drive-info">
+        <strong>Como usar o backup automático:</strong><br>
+        1. Clique em <strong>"Fazer Backup Agora"</strong> para baixar o arquivo JSON com todos os dados.<br>
+        2. Salve no seu Google Drive manualmente ou use o botão abaixo para abrir o Drive.<br>
+        3. Para restaurar: clique em <strong>"Restaurar Backup"</strong> e selecione o arquivo JSON salvo.<br>
+        <br>
+        💡 <strong>Dica:</strong> Crie uma pasta "Viagens Itatiaiuçu" no Drive e salve o backup mensalmente.
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn-export btn-drive" onclick="backupDrive()">☁️ Fazer Backup Agora</button>
+        <button class="btn-export" style="background:var(--bg3);color:var(--text);border:1px solid var(--border)" onclick="restaurarBackup()">📂 Restaurar Backup</button>
+        <button class="btn-export" style="background:#0F9D58;color:#fff;border:none" onclick="window.open('https://drive.google.com','_blank')">🌐 Abrir Google Drive</button>
+      </div>
+      <input type="file" id="file-backup" accept=".json" style="display:none" onchange="importarBackup(this)">
+      <div style="margin-top:12px;font-size:.78rem;color:var(--text3)" id="ultimo-backup"></div>
+    </div>
+
+    <button class="btn-sm accent" onclick="salvarConfig()" style="width:100%;padding:12px;font-size:.93rem;margin-top:6px">💾 Salvar Configurações</button>
+  </div>
+</div>
+
+<!-- ══════ RELATÓRIO ══════ -->
+<div class="page" id="page-relatorio">
+  <div class="page-header">
+    <h2>Emitir Relatório</h2>
+    <p>Exportar em Excel ou PDF</p>
+  </div>
+  <div class="card">
+    <div class="card-title">Período do Relatório</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <div style="font-size:.75rem;color:var(--text2);margin-bottom:4px">De (mês inicial)</div>
+        <select id="sel-rel-de" class="sel-std"></select>
+      </div>
+      <div>
+        <div style="font-size:.75rem;color:var(--text2);margin-bottom:4px">Até (mês final)</div>
+        <select id="sel-rel-ate" class="sel-std"></select>
+      </div>
+    </div>
+    <div class="export-row">
+      <button class="btn-export btn-excel" onclick="exportExcel()">📊 Exportar Excel</button>
+      <button class="btn-export btn-pdf"   onclick="exportPDF()">📄 Exportar PDF</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// CORES para percursos dinâmicos
+// ═══════════════════════════════════════
+const PALETA = [
+  {bg:'rgba(255,140,66,.18)',border:'#FF8C42',text:'#FF8C42',hex:'#FF8C42'},
+  {bg:'rgba(0,200,150,.18)', border:'#00C896',text:'#00C896',hex:'#00C896'},
+  {bg:'rgba(167,139,250,.18)',border:'#A78BFA',text:'#A78BFA',hex:'#A78BFA'},
+  {bg:'rgba(0,153,255,.18)', border:'#0099FF',text:'#0099FF',hex:'#0099FF'},
+  {bg:'rgba(255,76,106,.18)',border:'#FF4C6A',text:'#FF4C6A',hex:'#FF4C6A'},
+  {bg:'rgba(250,204,21,.18)',border:'#FACC15',text:'#FACC15',hex:'#FACC15'},
+  {bg:'rgba(52,211,153,.18)',border:'#34D399',text:'#34D399',hex:'#34D399'},
+  {bg:'rgba(251,146,60,.18)',border:'#FB923C',text:'#FB923C',hex:'#FB923C'},
+];
+function getCor(i){ return PALETA[i % PALETA.length]; }
+
+// ═══════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════
+let state = {
+  passageiros:[
+    {nome:'ADALTO',  inicial:'A'},
+    {nome:'SOFIA',   inicial:'S'},
+    {nome:'MICHELE', inicial:'M'},
+    {nome:'SUELAINE',inicial:'SU'},
+    {nome:'LEILA',   inicial:'L'},
+  ],
+  carros:['CARRO 1','CARRO 2','CARRO 3'],
+  percursos:[
+    {sigla:'ST',nome:'Santa Terezinha',valor:10.55},
+    {sigla:'I', nome:'Itatiaiuçu',     valor:17.80},
+    {sigla:'P', nome:'Pedras',         valor:10.00},
+  ],
+  dados:{},       // {mesKey: {dd: {carro:'',locked:false,pass:{NOME:{I:'',V:''}}}}}
+  anos:[2025,2026],
+  anoAtivo:2026,
+  ultimoBackup:null,
+};
+
+let modalCtx=null;
+let confirmCb=null;
+
+// ═══════════════════════════════════════
+// PERSISTÊNCIA
+// ═══════════════════════════════════════
+function salvar(){ localStorage.setItem('viagens_v2',JSON.stringify(state)); }
+function carregar(){
+  const s=localStorage.getItem('viagens_v2');
+  if(s){ try{ const l=JSON.parse(s); state={...state,...l}; }catch(e){} }
+}
+
+// ═══════════════════════════════════════
+// UTILITÁRIOS DE DATA
+// ═══════════════════════════════════════
+function hoje(){ const d=new Date(); return {y:d.getFullYear(),m:d.getMonth(),d:d.getDate()}; }
+function mesKey(y,m){ return `${y}-${String(m+1).padStart(2,'0')}`; }
+function diasNoMes(y,m){ return new Date(y,m+1,0).getDate(); }
+function nomeMes(y,m){ return new Date(y,m,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'}); }
+function parseMesKey(k){ const [y,m]=k.split('-').map(Number); return {y,m:m-1}; }
+
+// ═══════════════════════════════════════
+// INIT SELECTS DE MÊS
+// ═══════════════════════════════════════
+function buildMesOptions(anos){
+  const opts=[];
+  anos.forEach(y=>{
+    for(let m=0;m<12;m++) opts.push({key:mesKey(y,m),label:nomeMes(y,m)});
+  });
+  return opts;
+}
+function fillSelect(id,opts,defaultKey){
+  const sel=document.getElementById(id); if(!sel)return;
+  sel.innerHTML='';
+  opts.forEach(({key,label})=>{
+    const o=document.createElement('option');
+    o.value=key; o.textContent=label;
+    if(key===defaultKey) o.selected=true;
+    sel.appendChild(o);
+  });
+}
+function initMesSelects(){
+  const h=hoje();
+  const mk=mesKey(h.y,h.m);
+  const opts=buildMesOptions(state.anos);
+  fillSelect('sel-mes',opts,mk);
+  fillSelect('sel-mes-painel',opts,mk);
+  fillSelect('sel-de',opts,mesKey(h.y,0));
+  fillSelect('sel-ate',opts,mk);
+  fillSelect('sel-rel-de',opts,mesKey(h.y,0));
+  fillSelect('sel-rel-ate',opts,mk);
+}
+
+function mesAnterior(){
+  const sel=document.getElementById('sel-mes');
+  if(sel.selectedIndex>0){sel.selectedIndex--;renderTabela();}
+}
+function proximoMes(){
+  const sel=document.getElementById('sel-mes');
+  if(sel.selectedIndex<sel.options.length-1){sel.selectedIndex++;renderTabela();}
+}
+
+// ═══════════════════════════════════════
+// DADOS
+// ═══════════════════════════════════════
+function getDadosMes(mk){ if(!state.dados[mk])state.dados[mk]={}; return state.dados[mk]; }
+function getDadosDia(mk,dia){
+  const dm=getDadosMes(mk);
+  if(!dm[dia]) dm[dia]={carro:'',locked:false,pass:{}};
+  state.passageiros.forEach(p=>{ if(!dm[dia].pass[p.nome]) dm[dia].pass[p.nome]={I:'',V:''}; });
+  return dm[dia];
+}
+
+// ═══════════════════════════════════════
+// RENDER TABELA
+// ═══════════════════════════════════════
+function corPercurso(sigla){
+  const idx=state.percursos.findIndex(p=>p.sigla===sigla);
+  return idx>=0 ? getCor(idx) : null;
+}
+
+function renderLegenda(){
+  const el=document.getElementById('legenda-percursos');
+  el.innerHTML=state.percursos.map((p,i)=>{
+    const c=getCor(i);
+    return `<div class="legend-item"><div class="legend-dot" style="background:${c.hex}"></div>${p.sigla} = ${p.nome} (R$ ${p.valor.toFixed(2).replace('.',',')})</div>`;
+  }).join('');
+}
+
+function renderTabela(){
+  const mk=document.getElementById('sel-mes').value;
+  const {y,m}=parseMesKey(mk);
+  const dias=diasNoMes(y,m);
+  const h=hoje();
+  const tab=document.getElementById('tabela-viagens');
+
+  let html='<thead><tr>';
+  html+='<th style="width:22px"></th>';  // lock
+  html+='<th class="col-day">DIA</th>';
+  html+='<th class="col-car">CARRO</th>';
+  state.passageiros.forEach(p=>{ html+=`<th colspan="2">${p.inicial}</th>`; });
+  html+='</tr><tr>';
+  html+='<th></th><th></th><th></th>';
+  state.passageiros.forEach(()=>{ html+='<th style="font-size:.68rem;color:#00C896">I</th><th style="font-size:.68rem;color:#FF8C42">V</th>'; });
+  html+='</tr></thead><tbody>';
+
+  for(let d=1;d<=dias;d++){
+    const dd=String(d).padStart(2,'0');
+    const data=new Date(y,m,d);
+    const sem=data.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
+    const isHoje=(h.y===y&&h.m===m&&h.d===d);
+    const dd2=getDadosDia(mk,dd);
+    const locked=dd2.locked||false;
+
+    html+=`<tr class="${locked?'locked':''}">`;
+    // CADEADO
+    html+=`<td class="col-lock"><button class="lock-btn" onclick="toggleLock('${mk}','${dd}')" title="${locked?'Desbloquear':'Bloquear'} linha">${locked?'🔒':'🔓'}</button></td>`;
+    // DATA
+    html+=`<td class="col-day${isHoje?' today':''}">${dd}/${String(m+1).padStart(2,'0')} <span style="color:var(--text3);font-size:.68rem">${sem}</span></td>`;
+    // CARRO
+    if(locked){
+      html+=`<td><span style="font-family:var(--mono);font-size:.72rem;color:var(--text2)">${dd2.carro||'—'}</span></td>`;
+    } else {
+      html+=`<td><select class="car-select" onchange="setCarro('${mk}','${dd}',this.value)">`;
+      html+=`<option value=""> — </option>`;
+      state.carros.forEach(c=>{ html+=`<option value="${c}" ${dd2.carro===c?'selected':''}>${c}</option>`; });
+      html+=`</select></td>`;
+    }
+    // PASSAGEIROS
+    state.passageiros.forEach(p=>{
+      ['I','V'].forEach(tipo=>{
+        const val=dd2.pass[p.nome]?.[tipo]||'';
+        const cor=val ? corPercurso(val) : null;
+        const style=cor ? `background:${cor.bg};border-color:${cor.border};color:${cor.text}` : '';
+        if(locked){
+          html+=`<td><span class="sigla-btn locked" style="${style}">${val||'·'}</span></td>`;
+        } else {
+          html+=`<td><span class="sigla-btn" style="${style}" onclick="openModal('${mk}','${dd}','${p.nome}','${tipo}')">${val||'·'}</span></td>`;
+        }
+      });
+    });
+    html+=`</tr>`;
+  }
+  html+='</tbody>';
+  tab.innerHTML=html;
+  renderLegenda();
+}
+
+function setCarro(mk,dia,val){ getDadosDia(mk,dia).carro=val; salvar(); }
+
+function toggleLock(mk,dia){
+  const dd=getDadosDia(mk,dia);
+  dd.locked=!dd.locked;
+  salvar(); renderTabela();
+  showToast(dd.locked?'🔒 Linha bloqueada':'🔓 Linha desbloqueada');
+}
+
+// ═══════════════════════════════════════
+// MODAL SIGLA
+// ═══════════════════════════════════════
+function openModal(mk,dia,passNome,tipo){
+  modalCtx={mk,dia,passNome,tipo};
+  const pass=state.passageiros.find(p=>p.nome===passNome);
+  document.getElementById('modal-title').textContent=`${pass?.nome||passNome}`;
+  document.getElementById('modal-sub').textContent=`${tipo==='I'?'🟢 Ida':'🟠 Volta'} — ${dia}/${parseMesKey(mk).m+1}/${parseMesKey(mk).y}`;
+  // Botões dinâmicos
+  const btns=document.getElementById('modal-btns');
+  btns.innerHTML='';
+  state.percursos.forEach((p,i)=>{
+    const c=getCor(i);
+    const b=document.createElement('div');
+    b.className='modal-btn';
+    b.style.cssText=`border-color:${c.border};color:${c.text}`;
+    b.innerHTML=`${p.sigla}<br><small style="font-weight:400;font-size:.68rem">${p.nome}</small>`;
+    b.onclick=()=>setSigla(p.sigla);
+    b.onmouseenter=()=>{ b.style.background=c.bg; };
+    b.onmouseleave=()=>{ b.style.background=''; };
+    btns.appendChild(b);
+  });
+  const bc=document.createElement('div');
+  bc.className='modal-btn val-clear';
+  bc.innerHTML='✕<br><small style="font-weight:400;font-size:.68rem">Limpar</small>';
+  bc.onclick=()=>setSigla('');
+  btns.appendChild(bc);
+  document.getElementById('modal-sigla').classList.add('open');
+}
+
+function setSigla(val){
+  if(!modalCtx)return;
+  const {mk,dia,passNome,tipo}=modalCtx;
+  getDadosDia(mk,dia).pass[passNome][tipo]=val;
+  salvar();
+  document.getElementById('modal-sigla').classList.remove('open');
+  modalCtx=null;
+  renderTabela();
+  showToast(val?`Marcado: ${val}`:'Marcação removida');
+}
+document.getElementById('modal-sigla').addEventListener('click',function(e){ if(e.target===this){this.classList.remove('open');modalCtx=null;} });
+
+function hojeVisible(){
+  const h=hoje(); const mk=mesKey(h.y,h.m);
+  const sel=document.getElementById('sel-mes');
+  for(let i=0;i<sel.options.length;i++){ if(sel.options[i].value===mk){sel.selectedIndex=i;break;} }
+  renderTabela();
+  setTimeout(()=>{ const t=document.querySelector('.col-day.today'); if(t) t.scrollIntoView({behavior:'smooth',block:'center'}); },100);
+}
+
+// ═══════════════════════════════════════
+// PAINEL
+// ═══════════════════════════════════════
+function calcTotais(mk){
+  const {y,m}=parseMesKey(mk);
+  const dias=diasNoMes(y,m);
+  const dm=getDadosMes(mk);
+  const totais={};
+  state.passageiros.forEach(p=>{ totais[p.nome]={total:0,perc:{}}; state.percursos.forEach(pc=>{ totais[p.nome].perc[pc.sigla]={I:0,V:0}; }); });
+  for(let d=1;d<=dias;d++){
+    const dd=String(d).padStart(2,'0');
+    const dadosDia=dm[dd]; if(!dadosDia)continue;
+    state.passageiros.forEach(p=>{
+      const pv=dadosDia.pass?.[p.nome]; if(!pv)return;
+      ['I','V'].forEach(tipo=>{
+        const sig=pv[tipo]; if(!sig)return;
+        const perc=state.percursos.find(pc=>pc.sigla===sig);
+        if(!perc)return;
+        if(!totais[p.nome].perc[sig]) totais[p.nome].perc[sig]={I:0,V:0};
+        totais[p.nome].perc[sig][tipo]++;
+        totais[p.nome].total+=perc.valor;
+      });
+    });
+  }
+  return totais;
+}
+
+function renderPainel(){
+  const mk=document.getElementById('sel-mes-painel').value;
+  const totais=calcTotais(mk);
+  let html='<div class="resumo-grid">';
+  state.passageiros.forEach(p=>{
+    const t=totais[p.nome];
+    const viagens=Object.values(t.perc).reduce((a,v)=>a+v.I+v.V,0);
+    let det='';
+    state.percursos.forEach((pc,i)=>{
+      const c=getCor(i); const cnt=(t.perc[pc.sigla]?.I||0)+(t.perc[pc.sigla]?.V||0);
+      if(cnt>0) det+=`<span class="r-sigla" style="background:${c.bg};color:${c.text}">${pc.sigla}</span>${cnt}x<br>`;
+    });
+    html+=`<div class="resumo-card">
+      <div class="r-nome">${p.inicial} — ${p.nome}</div>
+      <div class="r-total">R$ ${t.total.toFixed(2).replace('.',',')} <small>(${viagens}x)</small></div>
+      <div class="r-detail">${det||'<span style="color:var(--text3)">Sem viagens</span>'}</div>
+    </div>`;
+  });
+  html+='</div>';
+  document.getElementById('resumo-cards').innerHTML=html;
+
+  // Por destino
+  let hd='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px">';
+  let totalG=0;
+  state.percursos.forEach((pc,i)=>{
+    const c=getCor(i);
+    let tot=0;
+    state.passageiros.forEach(p=>{ const t=totais[p.nome]; tot+=((t.perc[pc.sigla]?.I||0)+(t.perc[pc.sigla]?.V||0))*pc.valor; });
+    totalG+=tot;
+    hd+=`<div style="padding:11px;background:var(--bg3);border-radius:10px;border:1px solid ${c.border}22">
+      <div style="font-size:.7rem;color:${c.text};font-weight:700;margin-bottom:4px">${pc.sigla} — ${pc.nome}</div>
+      <div style="font-size:1rem;font-weight:700">R$ ${tot.toFixed(2).replace('.',',')}</div>
+    </div>`;
+  });
+  hd+=`<div style="padding:11px;background:rgba(0,200,150,.08);border-radius:10px;border:1px solid var(--accent)">
+    <div style="font-size:.7rem;color:var(--accent);font-weight:700;margin-bottom:4px">TOTAL GERAL</div>
+    <div style="font-size:1.1rem;font-weight:800;color:var(--accent)">R$ ${totalG.toFixed(2).replace('.',',')}</div>
+  </div></div>`;
+  document.getElementById('resumo-destinos').innerHTML=hd;
+}
+
+// ═══════════════════════════════════════
+// ACUMULADO POR PERÍODO
+// ═══════════════════════════════════════
+function renderAcumulado(){
+  const de=document.getElementById('sel-de').value;
+  const ate=document.getElementById('sel-ate').value;
+  const opts=buildMesOptions(state.anos);
+  const idxDe=opts.findIndex(o=>o.key===de);
+  const idxAte=opts.findIndex(o=>o.key===ate);
+  if(idxDe<0||idxAte<0||idxDe>idxAte){ showToast('Período inválido!'); return; }
+  const meses=opts.slice(idxDe,idxAte+1).map(o=>o.key);
+
+  // Acumular totais por passageiro
+  const acum={};
+  state.passageiros.forEach(p=>{ acum[p.nome]={total:0,perc:{}}; state.percursos.forEach(pc=>{ acum[p.nome].perc[pc.sigla]=0; }); });
+
+  meses.forEach(mk=>{
+    const t=calcTotais(mk);
+    state.passageiros.forEach(p=>{
+      acum[p.nome].total+=t[p.nome].total;
+      state.percursos.forEach(pc=>{
+        acum[p.nome].perc[pc.sigla]+=(t[p.nome].perc[pc.sigla]?.I||0)+(t[p.nome].perc[pc.sigla]?.V||0);
+      });
+    });
+  });
+
+  const deLabel=opts[idxDe].label; const ateLabel=opts[idxAte].label;
+  let html=`<div style="font-size:.78rem;color:var(--text2);margin-bottom:12px">Período: <strong style="color:var(--text)">${deLabel}</strong> até <strong style="color:var(--text)">${ateLabel}</strong> (${meses.length} mês${meses.length>1?'es':''})</div>`;
+  html+='<div style="overflow-x:auto"><table class="acum-table"><thead><tr>';
+  html+='<th>PASSAGEIRO</th>';
+  state.percursos.forEach(pc=>{ html+=`<th>${pc.sigla}</th>`; });
+  html+='<th>TOTAL VIAGENS</th><th>VALOR TOTAL (R$)</th>';
+  html+='</tr></thead><tbody>';
+
+  let totG=0, totViG=0;
+  const totPerc={};
+  state.percursos.forEach(pc=>{ totPerc[pc.sigla]=0; });
+
+  state.passageiros.forEach(p=>{
+    const a=acum[p.nome];
+    const totVi=Object.values(a.perc).reduce((x,v)=>x+v,0);
+    totG+=a.total; totViG+=totVi;
+    html+=`<tr><td><strong>${p.nome}</strong><br><span style="font-size:.7rem;color:var(--text2)">${p.inicial}</span></td>`;
+    state.percursos.forEach(pc=>{ totPerc[pc.sigla]+=a.perc[pc.sigla]||0; html+=`<td>${a.perc[pc.sigla]||0}</td>`; });
+    html+=`<td>${totVi}</td><td><strong>R$ ${a.total.toFixed(2).replace('.',',')}</strong></td></tr>`;
+  });
+
+  html+='<tr><td><strong>TOTAL</strong></td>';
+  state.percursos.forEach(pc=>{ html+=`<td>${totPerc[pc.sigla]}</td>`; });
+  html+=`<td>${totViG}</td><td>R$ ${totG.toFixed(2).replace('.',',')}</td></tr>`;
+  html+='</tbody></table></div>';
+  document.getElementById('acumulado-resultado').innerHTML=html;
+}
+
+// ═══════════════════════════════════════
+// CONFIGURAÇÕES
+// ═══════════════════════════════════════
+function renderConfig(){
+  // ANOS
+  const la=document.getElementById('lista-anos');
+  la.innerHTML=state.anos.map(a=>`
+    <div class="ano-btn ${a===state.anoAtivo?'active':''}" onclick="setAnoAtivo(${a})">${a}</div>
+  `).join('');
+
+  // PASSAGEIROS
+  document.getElementById('lista-passageiros').innerHTML=state.passageiros.map((p,i)=>`
+    <div class="tag-item">
+      <span style="font-family:var(--mono);font-weight:700;color:var(--accent)">${p.inicial}</span>
+      <span>${p.nome}</span>
+      <span class="tag-del" onclick="removerPassageiro(${i})">×</span>
+    </div>`).join('');
+
+  // CARROS
+  document.getElementById('lista-carros').innerHTML=state.carros.map((c,i)=>`
+    <div class="tag-item"><span>🚗 ${c}</span><span class="tag-del" onclick="removerCarro(${i})">×</span></div>`).join('');
+
+  // PERCURSOS
+  const lp=document.getElementById('lista-percursos');
+  lp.innerHTML=state.percursos.map((p,i)=>{
+    const c=getCor(i);
+    return `<div class="config-row">
+      <label>
+        <span class="color-swatch" style="background:${c.hex};margin-right:8px;vertical-align:middle"></span>
+        <strong style="color:${c.text}">${p.sigla}</strong> — ${p.nome}
+      </label>
+      <input class="config-input" type="number" step="0.01" value="${p.valor}" 
+        onchange="state.percursos[${i}].valor=parseFloat(this.value)||0" style="width:100px">
+      <span class="tag-del" onclick="removerPercurso(${i})" style="margin-left:4px">×</span>
+    </div>`;
+  }).join('');
+
+  // ÚLTIMO BACKUP
+  const ub=document.getElementById('ultimo-backup');
+  ub.textContent=state.ultimoBackup ? `Último backup: ${new Date(state.ultimoBackup).toLocaleString('pt-BR')}` : 'Nenhum backup realizado ainda.';
+}
+
+function setAnoAtivo(a){ state.anoAtivo=a; initMesSelects(); renderConfig(); showToast(`Ano ${a} ativo!`); }
+
+function adicionarAno(){
+  const v=parseInt(document.getElementById('novo-ano').value);
+  if(!v||v<2020||v>2099){showToast('Ano inválido!');return;}
+  if(state.anos.includes(v)){showToast('Ano já existe!');return;}
+  state.anos.push(v); state.anos.sort();
+  document.getElementById('novo-ano').value='';
+  initMesSelects(); renderConfig(); salvar(); showToast(`Ano ${v} criado!`);
+}
+
+function adicionarPassageiro(){
+  const nome=document.getElementById('novo-passageiro').value.trim().toUpperCase();
+  const ini=document.getElementById('nova-inicial').value.trim().toUpperCase();
+  if(!nome||!ini){showToast('Preencha nome e sigla!');return;}
+  state.passageiros.push({nome,inicial:ini});
+  document.getElementById('novo-passageiro').value='';
+  document.getElementById('nova-inicial').value='';
+  renderConfig(); salvar(); showToast(`${nome} adicionado!`);
+}
+function removerPassageiro(i){
+  if(state.passageiros.length<=1){showToast('Mínimo 1 passageiro!');return;}
+  confirmAction(`Remover ${state.passageiros[i].nome}?`,'Todos os registros deste passageiro serão mantidos, mas ele não aparecerá em novos lançamentos.',()=>{ state.passageiros.splice(i,1); renderConfig(); salvar(); });
+}
+function adicionarCarro(){
+  const nome=document.getElementById('novo-carro').value.trim().toUpperCase();
+  if(!nome)return;
+  state.carros.push(nome);
+  document.getElementById('novo-carro').value='';
+  renderConfig(); salvar(); showToast(`${nome} adicionado!`);
+}
+function removerCarro(i){ state.carros.splice(i,1); renderConfig(); salvar(); }
+
+function adicionarPercurso(){
+  const sigla=document.getElementById('novo-perc-sigla').value.trim().toUpperCase();
+  const nome=document.getElementById('novo-perc-nome').value.trim();
+  const valor=parseFloat(document.getElementById('novo-perc-valor').value)||0;
+  if(!sigla||!nome){showToast('Preencha sigla e nome!');return;}
+  if(state.percursos.find(p=>p.sigla===sigla)){showToast('Sigla já existe!');return;}
+  state.percursos.push({sigla,nome,valor});
+  document.getElementById('novo-perc-sigla').value='';
+  document.getElementById('novo-perc-nome').value='';
+  document.getElementById('novo-perc-valor').value='';
+  renderConfig(); salvar(); showToast(`Percurso ${sigla} adicionado!`);
+}
+function removerPercurso(i){
+  if(state.percursos.length<=1){showToast('Mínimo 1 percurso!');return;}
+  confirmAction(`Remover percurso ${state.percursos[i].sigla}?`,'Registros existentes com esta sigla serão mantidos nos dados.',()=>{ state.percursos.splice(i,1); renderConfig(); salvar(); });
+}
+
+function salvarConfig(){ salvar(); initMesSelects(); renderTabela(); renderConfig(); showToast('Configurações salvas! ✓'); }
+
+// ═══════════════════════════════════════
+// BACKUP / RESTORE
+// ═══════════════════════════════════════
+function backupDrive(){
+  state.ultimoBackup=new Date().toISOString();
+  salvar();
+  const json=JSON.stringify(state,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const data=new Date().toISOString().slice(0,10);
+  a.href=url; a.download=`Viagens_Itatiaiucu_Backup_${data}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  renderConfig();
+  showToast('📥 Backup baixado! Salve no Google Drive.');
+}
+function restaurarBackup(){ document.getElementById('file-backup').click(); }
+function importarBackup(input){
+  const f=input.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const loaded=JSON.parse(e.target.result);
+      confirmAction('Restaurar backup?','Todos os dados atuais serão substituídos pelo backup. Esta ação não pode ser desfeita.',()=>{
+        state={...state,...loaded};
+        salvar(); initMesSelects(); renderTabela(); renderConfig();
+        showToast('✅ Backup restaurado com sucesso!');
+      });
+    }catch(err){ showToast('Arquivo inválido!'); }
+  };
+  r.readAsText(f);
+  input.value='';
+}
+
+// ═══════════════════════════════════════
+// EXPORTAÇÃO EXCEL
+// ═══════════════════════════════════════
+function getMesesPeriodo(deId,ateId){
+  const opts=buildMesOptions(state.anos);
+  const i1=opts.findIndex(o=>o.key===deId);
+  const i2=opts.findIndex(o=>o.key===ateId);
+  if(i1<0||i2<0||i1>i2) return null;
+  return opts.slice(i1,i2+1).map(o=>o.key);
+}
+
+function exportExcel(){
+  const de=document.getElementById('sel-rel-de').value;
+  const ate=document.getElementById('sel-rel-ate').value;
+  const meses=getMesesPeriodo(de,ate);
+  if(!meses){showToast('Período inválido!');return;}
+  const wb=XLSX.utils.book_new();
+
+  meses.forEach(mk=>{
+    const {y,m}=parseMesKey(mk);
+    const dias=diasNoMes(y,m);
+    const dm=getDadosMes(mk);
+    const header=['🔒','DIA','CARRO'];
+    state.passageiros.forEach(p=>{ header.push(`${p.inicial}-I`,`${p.inicial}-V`); });
+    const rows=[header];
+    for(let d=1;d<=dias;d++){
+      const dd=String(d).padStart(2,'0');
+      const dd2=dm[dd];
+      const row=[dd2?.locked?'🔒':'',`${dd}/${String(m+1).padStart(2,'0')}/${y}`,dd2?.carro||''];
+      state.passageiros.forEach(p=>{ row.push(dd2?.pass?.[p.nome]?.I||'',dd2?.pass?.[p.nome]?.V||''); });
+      rows.push(row);
+    }
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    const sheetName=new Date(y,m,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});
+    XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  });
+
+  // Aba Resumo acumulado
+  const header2=['PASSAGEIRO'];
+  state.percursos.forEach(pc=>header2.push(pc.sigla));
+  header2.push('TOTAL VIAGENS','VALOR TOTAL R$');
+  const rows2=[header2];
+  const acum={};
+  state.passageiros.forEach(p=>{ acum[p.nome]={total:0,perc:{}}; state.percursos.forEach(pc=>{ acum[p.nome].perc[pc.sigla]=0; }); });
+  meses.forEach(mk=>{
+    const t=calcTotais(mk);
+    state.passageiros.forEach(p=>{
+      acum[p.nome].total+=t[p.nome].total;
+      state.percursos.forEach(pc=>{ acum[p.nome].perc[pc.sigla]+=(t[p.nome].perc[pc.sigla]?.I||0)+(t[p.nome].perc[pc.sigla]?.V||0); });
+    });
+  });
+  state.passageiros.forEach(p=>{
+    const a=acum[p.nome];
+    const tv=Object.values(a.perc).reduce((x,v)=>x+v,0);
+    const row=[p.nome];
+    state.percursos.forEach(pc=>row.push(a.perc[pc.sigla]||0));
+    row.push(tv,a.total.toFixed(2));
+    rows2.push(row);
+  });
+  const ws2=XLSX.utils.aoa_to_sheet(rows2);
+  XLSX.utils.book_append_sheet(wb,ws2,'RESUMO');
+  const opts=buildMesOptions(state.anos);
+  const l1=opts.find(o=>o.key===de)?.label||de;
+  const l2=opts.find(o=>o.key===ate)?.label||ate;
+  XLSX.writeFile(wb,`Viagens_${de}_a_${ate}.xlsx`);
+  showToast('📊 Excel exportado!');
+}
+
+// ═══════════════════════════════════════
+// EXPORTAÇÃO PDF
+// ═══════════════════════════════════════
+function exportPDF(){
+  const de=document.getElementById('sel-rel-de').value;
+  const ate=document.getElementById('sel-rel-ate').value;
+  const meses=getMesesPeriodo(de,ate);
+  if(!meses){showToast('Período inválido!');return;}
+
+  const acum={};
+  state.passageiros.forEach(p=>{ acum[p.nome]={total:0,perc:{}}; state.percursos.forEach(pc=>{ acum[p.nome].perc[pc.sigla]=0; }); });
+  meses.forEach(mk=>{
+    const t=calcTotais(mk); state.passageiros.forEach(p=>{
+      acum[p.nome].total+=t[p.nome].total;
+      state.percursos.forEach(pc=>{ acum[p.nome].perc[pc.sigla]+=(t[p.nome].perc[pc.sigla]?.I||0)+(t[p.nome].perc[pc.sigla]?.V||0); });
+    });
+  });
+
+  const opts=buildMesOptions(state.anos);
+  const l1=opts.find(o=>o.key===de)?.label||de;
+  const l2=opts.find(o=>o.key===ate)?.label||ate;
+  const cores=['#FF8C42','#00C896','#A78BFA','#0099FF','#FF4C6A','#FACC15','#34D399','#FB923C'];
+
+  let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+    body{font-family:Arial,sans-serif;font-size:10.5px;color:#111;margin:18px}
+    h1{font-size:15px;text-align:center;margin-bottom:3px}
+    h2{font-size:11px;margin:14px 0 5px;color:#1F4E79;border-bottom:1px solid #ccc;padding-bottom:3px}
+    p.sub{text-align:center;color:#666;font-size:9px;margin-bottom:14px}
+    table{width:100%;border-collapse:collapse;margin-bottom:14px}
+    th{background:#1F4E79;color:white;padding:4px 3px;text-align:center;font-size:9px}
+    td{border:1px solid #ddd;padding:3px 4px;text-align:center;font-size:9.5px}
+    td:first-child,td:nth-child(2){text-align:left}
+    .tot-row{background:#E8F5E9;font-weight:bold}
+    @media print{body{margin:8mm}}
+  </style></head><body>
+  <h1>CONTROLE DE VIAGENS — ITATIAIUÇU/MG</h1>
+  <p class="sub">Período: ${l1} a ${l2} &nbsp;|&nbsp; Gerado em ${new Date().toLocaleDateString('pt-BR')}</p>`;
+
+  // Tabelas mensais
+  meses.forEach(mk=>{
+    const {y,m}=parseMesKey(mk);
+    const dias=diasNoMes(y,m);
+    const dm=getDadosMes(mk);
+    const lm=nomeMes(y,m).toUpperCase();
+    html+=`<h2>${lm}</h2><table><thead><tr><th>🔒</th><th>DIA</th><th>CARRO</th>`;
+    state.passageiros.forEach(p=>{ html+=`<th colspan="2">${p.inicial}</th>`; });
+    html+=`</tr><tr><th></th><th></th><th></th>`;
+    state.passageiros.forEach(()=>{ html+=`<th>I</th><th>V</th>`; });
+    html+=`</tr></thead><tbody>`;
+    for(let d=1;d<=dias;d++){
+      const dd=String(d).padStart(2,'0');
+      const dd2=getDadosDia(mk,dd);
+      html+=`<tr><td>${dd2.locked?'🔒':''}</td><td>${dd}/${String(m+1).padStart(2,'0')}</td><td>${dd2.carro||''}</td>`;
+      state.passageiros.forEach(p=>{
+        ['I','V'].forEach(tipo=>{
+          const v=dd2.pass?.[p.nome]?.[tipo]||'';
+          const ci=state.percursos.findIndex(pc=>pc.sigla===v);
+          const cor=ci>=0?cores[ci%cores.length]:'';
+          html+=`<td style="${cor?`background:${cor}22;color:${cor};font-weight:bold`:''}">${v}</td>`;
+        });
+      });
+      html+=`</tr>`;
+    }
+    html+=`</tbody></table>`;
+  });
+
+  // Resumo acumulado
+  html+=`<h2>RESUMO ACUMULADO — ${l1} A ${l2}</h2>
+  <table><thead><tr><th>PASSAGEIRO</th>`;
+  state.percursos.forEach(pc=>{ html+=`<th>${pc.sigla}</th>`; });
+  html+=`<th>TOTAL VIAGENS</th><th>VALOR (R$)</th></tr></thead><tbody>`;
+  let tG=0;
+  state.passageiros.forEach(p=>{
+    const a=acum[p.nome]; const tv=Object.values(a.perc).reduce((x,v)=>x+v,0); tG+=a.total;
+    html+=`<tr><td><strong>${p.nome}</strong></td>`;
+    state.percursos.forEach(pc=>{ html+=`<td>${a.perc[pc.sigla]||0}</td>`; });
+    html+=`<td>${tv}</td><td>R$ ${a.total.toFixed(2).replace('.',',')}</td></tr>`;
+  });
+  html+=`<tr class="tot-row"><td>TOTAL GERAL</td>`;
+  state.percursos.forEach(()=>html+=`<td>—</td>`);
+  html+=`<td>—</td><td>R$ ${tG.toFixed(2).replace('.',',')}</td></tr>`;
+  html+=`</tbody></table>
+  <p style="font-size:8.5px;color:#999;text-align:center;margin-top:16px">Legenda: ${state.percursos.map(p=>`${p.sigla}=${p.nome}`).join(' | ')}</p>
+  
+<script>
+// ═══ PWA: Service Worker ═══
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js')
+      .then(function(r){ console.log('SW ok:', r.scope); })
+      .catch(function(e){ console.log('SW erro:', e); });
+  });
+}
+
+// ═══ PWA: Botão Instalar (criado via JS para não quebrar strings HTML) ═══
+var deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  var btn = document.getElementById('btn-pwa-install');
+  if (btn) btn.style.display = 'flex';
+});
+
+window.addEventListener('appinstalled', function() {
+  var btn = document.getElementById('btn-pwa-install');
+  if (btn) btn.style.display = 'none';
+  deferredPrompt = null;
+});
+
+function instalarPWA() {
+  if (!deferredPrompt) {
+    showToast('Use Chrome e acesse pelo link (não pelo arquivo local)');
+    return;
+  }
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(r) {
+    if (r.outcome === 'accepted') showToast('App instalado com sucesso!');
+    deferredPrompt = null;
+    var btn = document.getElementById('btn-pwa-install');
+    if (btn) btn.style.display = 'none';
+  });
+}
+
+// Criar botão instalar dinamicamente após página carregar
+window.addEventListener('DOMContentLoaded', function() {
+  var btn = document.createElement('button');
+  btn.id = 'btn-pwa-install';
+  btn.textContent = '📲 Instalar App';
+  btn.style.cssText = [
+    'display:none',
+    'position:fixed',
+    'bottom:72px',
+    'right:14px',
+    'z-index:999',
+    'background:linear-gradient(135deg,#00C896,#0099FF)',
+    'color:#000',
+    'border:none',
+    'border-radius:28px',
+    'padding:11px 20px',
+    'font-family:Outfit,sans-serif',
+    'font-size:.84rem',
+    'font-weight:700',
+    'cursor:pointer',
+    'align-items:center',
+    'gap:8px',
+    'box-shadow:0 4px 20px rgba(0,200,150,.55)'
+  ].join(';');
+  btn.onclick = instalarPWA;
+  document.body.appendChild(btn);
+});
+</script>
+
+</body></html>`;
+
+  const janela=window.open('','_blank');
+  janela.document.write(html); janela.document.close();
+  janela.onload=()=>janela.print();
+  showToast('📄 PDF aberto para impressão!');
+}
+
+// ═══════════════════════════════════════
+// CONFIRM MODAL
+// ═══════════════════════════════════════
+function confirmAction(title,msg,cb){
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').textContent=msg;
+  confirmCb=cb;
+  document.getElementById('modal-confirm').classList.add('open');
+}
+function confirmCancel(){ document.getElementById('modal-confirm').classList.remove('open'); confirmCb=null; }
+document.getElementById('confirm-ok').onclick=()=>{ document.getElementById('modal-confirm').classList.remove('open'); if(confirmCb)confirmCb(); confirmCb=null; };
+
+// ═══════════════════════════════════════
+// NAVEGAÇÃO
+// ═══════════════════════════════════════
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='painel'){renderPainel();}
+  if(id==='config'){renderConfig();}
+}
+
+// ═══════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg;
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+// ═══════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════
+carregar();
+initMesSelects();
+renderTabela();
+</script>
+</body>
+</html>
