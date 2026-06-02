@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0F1923">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Viagens">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Viagens Itatiaiuçu</title>
@@ -167,13 +174,6 @@ table.viagens tr:hover td.col-day,table.viagens tr:hover td.col-lock{background:
   .sigla-btn{width:34px;height:24px;font-size:.68rem}
 }
 </style>
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#0F1923">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Viagens">
-  <link rel="apple-touch-icon" href="./icons/icon-192.png">
 </head>
 <body>
 
@@ -316,51 +316,25 @@ table.viagens tr:hover td.col-day,table.viagens tr:hover td.col-lock{background:
     <!-- GOOGLE DRIVE -->
     <div class="config-section">
       <h3>☁️ Backup Google Drive</h3>
-
-      <!-- STATUS DRIVE -->
       <div id="drive-status-box" style="background:rgba(26,115,232,.1);border:1px solid rgba(26,115,232,.3);border-radius:10px;padding:12px 16px;font-size:.82rem;color:#7AAFFF;margin-bottom:14px;line-height:1.7">
-        <div id="drive-status-text">
-          <strong style="color:#90C4FF">🔌 Google Drive não conectado</strong><br>
-          Conecte sua conta para salvar backups automaticamente na nuvem.
-        </div>
+        <div id="drive-status-text"><strong style="color:#90C4FF">🔌 Google Drive não conectado</strong><br>Conecte sua conta para salvar backups automaticamente na nuvem.</div>
       </div>
-
-      <!-- BOTÕES DRIVE -->
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-        <button id="btn-drive-connect" class="btn-export btn-drive" onclick="driveConectar()">
-          🔑 Conectar Google Drive
-        </button>
-        <button id="btn-drive-backup" class="btn-export btn-drive" onclick="driveBackupAuto()" style="display:none">
-          ☁️ Backup Automático no Drive
-        </button>
-        <button id="btn-drive-disconnect" class="btn-sm danger" onclick="driveDesconectar()" style="display:none">
-          Desconectar Drive
-        </button>
+        <button id="btn-drive-connect"     class="btn-export btn-drive" onclick="driveConectar()">🔑 Conectar Google Drive</button>
+        <button id="btn-drive-backup"      class="btn-export btn-drive" onclick="driveBackupAuto()" style="display:none">☁️ Backup no Drive</button>
+        <button id="btn-drive-disconnect"  class="btn-sm danger"        onclick="driveDesconectar()" style="display:none">Desconectar</button>
       </div>
-
-      <!-- DIVISOR -->
       <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
         <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span style="font-size:.75rem;color:var(--text3)">OU</span>
+        <span style="font-size:.75rem;color:var(--text3)">OU BACKUP LOCAL</span>
         <div style="flex:1;height:1px;background:var(--border)"></div>
       </div>
-
-      <!-- BACKUP LOCAL -->
-      <div style="font-size:.82rem;color:var(--text2);margin-bottom:10px">
-        <strong style="color:var(--text)">💾 Backup Local (arquivo)</strong><br>
-        Baixa o arquivo de backup — o nome e pasta são lembrados automaticamente.
-      </div>
+      <div style="font-size:.82rem;color:var(--text2);margin-bottom:10px"><strong style="color:var(--text)">💾 Backup Local</strong><br>Baixa sempre com o mesmo nome — substitua o anterior na mesma pasta.</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn-export btn-excel" onclick="backupLocal()">
-          💾 Baixar Backup (.json)
-        </button>
-        <button class="btn-export" style="background:var(--bg3);color:var(--text);border:1px solid var(--border)" onclick="restaurarBackup()">
-          📂 Restaurar Backup
-        </button>
+        <button class="btn-export btn-excel" onclick="backupLocal()">💾 Baixar Backup (.json)</button>
+        <button class="btn-export" style="background:var(--bg3);color:var(--text);border:1px solid var(--border)" onclick="restaurarBackup()">📂 Restaurar Backup</button>
       </div>
       <input type="file" id="file-backup" accept=".json" style="display:none" onchange="importarBackup(this)">
-
-      <!-- INFO ÚLTIMO BACKUP -->
       <div style="margin-top:12px;font-size:.78rem;color:var(--text3)" id="ultimo-backup"></div>
       <div style="margin-top:4px;font-size:.78rem;color:var(--text3)" id="ultimo-backup-drive"></div>
     </div>
@@ -859,242 +833,184 @@ function salvarConfig(){ salvar(); initMesSelects(); renderTabela(); renderConfi
 // ═══════════════════════════════════════
 // BACKUP / RESTORE
 // ═══════════════════════════════════════
-// ═══════════════════════════════════════
-// BACKUP — LOCAL COM MEMÓRIA DE NOME
-// ═══════════════════════════════════════
+// BACKUP LOCAL
 function backupLocal(){
   state.ultimoBackup = new Date().toISOString();
   salvar();
-  const json = JSON.stringify(state, null, 2);
-  const blob = new Blob([json], {type:'application/json'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  const data = new Date().toISOString().slice(0,10);
-  // Usa o mesmo nome de sempre para facilitar sobrescrever na mesma pasta
-  const nomeArquivo = 'Viagens_Itatiaiucu_Backup.json';
+  var json = JSON.stringify(state, null, 2);
+  var blob = new Blob([json], {type:"application/json"});
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement("a");
   a.href     = url;
-  a.download = nomeArquivo;
+  a.download = "Viagens_Itatiaiucu_Backup.json";
   a.click();
   URL.revokeObjectURL(url);
   renderConfig();
-  showToast('💾 Backup baixado! Substitua o anterior na sua pasta.');
+  showToast("Backup baixado! Substitua o anterior na mesma pasta.");
 }
-
-// Alias para compatibilidade
 function backupDrive(){ driveBackupAuto(); }
-
-function restaurarBackup(){ document.getElementById('file-backup').click(); }
-
+function restaurarBackup(){ document.getElementById("file-backup").click(); }
 function importarBackup(input){
-  const f = input.files[0]; if(!f) return;
-  const r = new FileReader();
-  r.onload = e => {
+  var f = input.files[0]; if(!f) return;
+  var r = new FileReader();
+  r.onload = function(e){
     try{
-      const loaded = JSON.parse(e.target.result);
-      confirmAction('Restaurar backup?',
-        'Todos os dados atuais serão substituídos. Esta ação não pode ser desfeita.',
-        ()=>{
-          state = {...state, ...loaded};
+      var loaded = JSON.parse(e.target.result);
+      confirmAction("Restaurar backup?",
+        "Todos os dados atuais serao substituidos. Esta acao nao pode ser desfeita.",
+        function(){
+          state = Object.assign({}, state, loaded);
           salvar(); initMesSelects(); renderTabela(); renderConfig();
-          showToast('✅ Backup restaurado com sucesso!');
+          showToast("Backup restaurado com sucesso!");
         });
-    }catch(err){ showToast('Arquivo inválido!'); }
+    }catch(err){ showToast("Arquivo invalido!"); }
   };
   r.readAsText(f);
-  input.value = '';
+  input.value = "";
 }
 
-// ═══════════════════════════════════════
-// GOOGLE DRIVE API (OAuth2 PKCE)
-// ═══════════════════════════════════════
-const DRIVE_CLIENT_ID = 'SEU_CLIENT_ID_AQUI'; // <-- preencher após criar projeto no Google Console
-const DRIVE_FOLDER_NAME = 'Viagens Itatiaiuçu';
-const DRIVE_FILE_NAME   = 'Viagens_Itatiaiucu_Backup.json';
-const DRIVE_SCOPES      = 'https://www.googleapis.com/auth/drive.file';
-
-let driveToken = null;
+// GOOGLE DRIVE
+var DRIVE_FOLDER = "Viagens Itatiaiucu";
+var DRIVE_FILE   = "Viagens_Itatiaiucu_Backup.json";
+var driveToken   = null;
 
 function driveCarregarToken(){
-  const t = localStorage.getItem('drive_token');
-  if(t){
-    try{ driveToken = JSON.parse(t); }catch(e){}
-  }
+  var t = localStorage.getItem("drive_token");
+  if(t){ try{ driveToken = JSON.parse(t); }catch(e){} }
 }
-
 function driveTokenValido(){
-  if(!driveToken) return false;
-  return driveToken.expiry > Date.now();
+  return driveToken && driveToken.expiry > Date.now();
 }
-
 function driveConectar(){
-  // Gerar code_verifier PKCE
-  const verifier = Array.from(crypto.getRandomValues(new Uint8Array(48)))
-    .map(b => b.toString(16).padStart(2,'0')).join('');
-  sessionStorage.setItem('pkce_verifier', verifier);
-
-  // Gerar code_challenge (SHA-256 base64url)
-  crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))
-    .then(buf => {
-      const challenge = btoa(String.fromCharCode(...new Uint8Array(buf)))
-        .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
-
-      const redirect = encodeURIComponent(window.location.href.split('?')[0]);
-      const params = [
-        'response_type=code',
-        'client_id=' + DRIVE_CLIENT_ID,
-        'redirect_uri=' + redirect,
-        'scope=' + encodeURIComponent(DRIVE_SCOPES),
-        'code_challenge=' + challenge,
-        'code_challenge_method=S256',
-        'access_type=offline',
-        'prompt=consent'
-      ].join('&');
-
-      if(DRIVE_CLIENT_ID === 'SEU_CLIENT_ID_AQUI'){
-        // Mostrar instruções de configuração
-        driveShowSetup();
-        return;
-      }
-      window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params;
-    });
+  var clientId = localStorage.getItem("drive_client_id") || "";
+  if(!clientId){ driveShowSetup(); return; }
+  var redirect = window.location.href.split("?")[0];
+  var url = "https://accounts.google.com/o/oauth2/v2/auth"
+    + "?response_type=token"
+    + "&client_id=" + encodeURIComponent(clientId)
+    + "&redirect_uri=" + encodeURIComponent(redirect)
+    + "&scope=" + encodeURIComponent("https://www.googleapis.com/auth/drive.file");
+  window.location.href = url;
 }
-
 function driveShowSetup(){
-  const box = document.getElementById('drive-status-box');
-  box.style.background = 'rgba(245,166,35,.1)';
-  box.style.borderColor = 'rgba(245,166,35,.4)';
-  box.style.color = '#FFD580';
-  document.getElementById('drive-status-text').innerHTML = \`
-    <strong style="color:#FFD580">⚙️ Configure o Google Drive em 3 passos:</strong><br><br>
-    <strong>1.</strong> Acesse <a href="https://console.cloud.google.com" target="_blank" style="color:#90C4FF">console.cloud.google.com</a><br>
-    <strong>2.</strong> Crie um projeto → APIs → Google Drive API → Credenciais → OAuth 2.0<br>
-    <strong>3.</strong> Cole o <strong>Client ID</strong> gerado no campo abaixo e clique em Salvar:<br><br>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <input id="inp-client-id" type="text" placeholder="Cole seu Client ID aqui"
-        style="flex:1;background:#0F1923;border:1px solid #2A3F55;color:#E8F0F8;padding:7px 10px;border-radius:8px;font-size:.82rem;outline:none">
-      <button onclick="driveSalvarClientId()" style="background:#1A73E8;color:#fff;border:none;border-radius:8px;padding:7px 14px;cursor:pointer;font-weight:600;font-size:.82rem">
-        Salvar
-      </button>
-    </div>\`;
+  var box = document.getElementById("drive-status-box");
+  var txt = document.getElementById("drive-status-text");
+  box.style.background  = "rgba(245,166,35,.1)";
+  box.style.borderColor = "rgba(245,166,35,.4)";
+  box.style.color       = "#FFD580";
+  txt.innerHTML = 
+    "<strong style='color:#FFD580'>⚠️ Configure o Google Drive:</strong><br><br>"
+    + "<strong>1.</strong> Acesse <a href='https://console.cloud.google.com' target='_blank' style='color:#90C4FF'>console.cloud.google.com</a><br>"
+    + "<strong>2.</strong> Crie um projeto &rarr; Google Drive API &rarr; Credenciais &rarr; OAuth 2.0<br>"
+    + "<strong>3.</strong> Em 'Origens autorizadas' adicione: " + window.location.origin + "<br>"
+    + "<strong>4.</strong> Cole o Client ID abaixo:<br><br>"
+    + "<div style='display:flex;gap:8px;margin-top:6px'>"
+    + "<input id='inp-cid' type='text' placeholder='Cole seu Client ID' style='flex:1;background:#0F1923;border:1px solid #2A3F55;color:#E8F0F8;padding:7px 10px;border-radius:8px;font-size:.82rem;outline:none'>"
+    + "<button onclick='driveSalvarClientId()' style='background:#1A73E8;color:#fff;border:none;border-radius:8px;padding:7px 14px;cursor:pointer;font-weight:600'>Salvar</button>"
+    + "</div>";
 }
-
 function driveSalvarClientId(){
-  const id = document.getElementById('inp-client-id')?.value?.trim();
-  if(!id){ showToast('Cole o Client ID primeiro!'); return; }
-  localStorage.setItem('drive_client_id_custom', id);
-  // Recarregar com o novo ID
-  window.location.reload();
+  var id = (document.getElementById("inp-cid") || {}).value || "";
+  id = id.trim();
+  if(!id){ showToast("Cole o Client ID primeiro!"); return; }
+  localStorage.setItem("drive_client_id", id);
+  showToast("Client ID salvo! Clique em Conectar.");
+  driveVerificarCallback();
 }
-
 function driveDesconectar(){
   driveToken = null;
-  localStorage.removeItem('drive_token');
+  localStorage.removeItem("drive_token");
   atualizarUILogin(false);
-  showToast('Drive desconectado.');
+  showToast("Drive desconectado.");
 }
-
-function atualizarUILogin(conectado){
-  document.getElementById('btn-drive-connect').style.display    = conectado ? 'none'  : 'flex';
-  document.getElementById('btn-drive-backup').style.display     = conectado ? 'flex'  : 'none';
-  document.getElementById('btn-drive-disconnect').style.display = conectado ? 'inline-block' : 'none';
-  const box = document.getElementById('drive-status-box');
-  const txt = document.getElementById('drive-status-text');
-  if(conectado){
-    box.style.background   = 'rgba(0,200,150,.1)';
-    box.style.borderColor  = 'rgba(0,200,150,.35)';
-    box.style.color        = '#7AFFE0';
-    txt.innerHTML = '<strong style="color:#00C896">✅ Google Drive conectado!</strong><br>Backups serão salvos automaticamente na pasta <strong>Viagens Itatiaiuçu</strong> no seu Drive.';
+function atualizarUILogin(ok){
+  var bc = document.getElementById("btn-drive-connect");
+  var bb = document.getElementById("btn-drive-backup");
+  var bd = document.getElementById("btn-drive-disconnect");
+  if(bc) bc.style.display = ok ? "none"         : "flex";
+  if(bb) bb.style.display = ok ? "flex"         : "none";
+  if(bd) bd.style.display = ok ? "inline-block" : "none";
+  var box = document.getElementById("drive-status-box");
+  var txt = document.getElementById("drive-status-text");
+  if(!box || !txt) return;
+  if(ok){
+    box.style.background  = "rgba(0,200,150,.1)";
+    box.style.borderColor = "rgba(0,200,150,.35)";
+    box.style.color       = "#7AFFE0";
+    txt.innerHTML = "<strong style='color:#00C896'>✅ Google Drive conectado!</strong><br>Backups salvos na pasta <strong>Viagens Itatiaiucu</strong>.";
   } else {
-    box.style.background   = 'rgba(26,115,232,.1)';
-    box.style.borderColor  = 'rgba(26,115,232,.3)';
-    box.style.color        = '#7AAFFF';
-    txt.innerHTML = '<strong style="color:#90C4FF">🔌 Google Drive não conectado</strong><br>Conecte sua conta para salvar backups automaticamente na nuvem.';
+    box.style.background  = "rgba(26,115,232,.1)";
+    box.style.borderColor = "rgba(26,115,232,.3)";
+    box.style.color       = "#7AAFFF";
+    txt.innerHTML = "<strong style='color:#90C4FF'>🔌 Google Drive não conectado</strong><br>Conecte sua conta para backup automático.";
   }
 }
-
-async function driveBackupAuto(){
-  if(!driveTokenValido()){ showToast('Reconecte o Google Drive!'); atualizarUILogin(false); return; }
-  showToast('☁️ Salvando no Drive...');
-  try{
-    // 1. Buscar ou criar pasta
-    const folderId = await driveBuscarOuCriarPasta();
-    // 2. Buscar se arquivo já existe (para sobrescrever)
-    const fileId = await driveBuscarArquivo(folderId);
-    // 3. Salvar/atualizar
-    const json = JSON.stringify(state, null, 2);
-    if(fileId){
-      await driveAtualizarArquivo(fileId, json);
-    } else {
-      await driveCriarArquivo(folderId, json);
-    }
-    state.ultimoBackupDrive = new Date().toISOString();
-    salvar(); renderConfig();
-    showToast('✅ Backup salvo no Google Drive!');
-  } catch(e){
-    console.error(e);
-    showToast('Erro ao salvar no Drive. Tente novamente.');
-  }
+function driveBackupAuto(){
+  if(!driveTokenValido()){ showToast("Reconecte o Google Drive!"); atualizarUILogin(false); return; }
+  showToast("Salvando no Drive...");
+  driveBuscarOuCriarPasta()
+    .then(function(fid){ return Promise.all([fid, driveBuscarArquivo(fid)]); })
+    .then(function(res){
+      var fid = res[0]; var fileId = res[1];
+      var json = JSON.stringify(state, null, 2);
+      var p = fileId ? driveAtualizarArquivo(fileId, json) : driveCriarArquivo(fid, json);
+      return p;
+    })
+    .then(function(){ 
+      state.ultimoBackupDrive = new Date().toISOString();
+      salvar(); renderConfig();
+      showToast("Backup salvo no Google Drive!");
+    })
+    .catch(function(e){ console.error(e); showToast("Erro ao salvar no Drive."); });
 }
-
-async function driveBuscarOuCriarPasta(){
-  const q = encodeURIComponent(\`mimeType='application/vnd.google-apps.folder' and name='\${DRIVE_FOLDER_NAME}' and trashed=false\`);
-  const r = await fetch(\`https://www.googleapis.com/drive/v3/files?q=\${q}&fields=files(id,name)\`,
-    { headers: { Authorization: 'Bearer ' + driveToken.access_token }});
-  const data = await r.json();
-  if(data.files && data.files.length > 0) return data.files[0].id;
-  // Criar pasta
-  const cr = await fetch('https://www.googleapis.com/drive/v3/files', {
-    method: 'POST',
-    headers: { Authorization: 'Bearer ' + driveToken.access_token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: DRIVE_FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' })
-  });
-  const folder = await cr.json();
-  return folder.id;
+function driveReq(url, opts){
+  opts = opts || {};
+  opts.headers = opts.headers || {};
+  opts.headers["Authorization"] = "Bearer " + driveToken.access_token;
+  return fetch(url, opts).then(function(r){ return r.json(); });
 }
-
-async function driveBuscarArquivo(folderId){
-  const q = encodeURIComponent(\`name='\${DRIVE_FILE_NAME}' and '\${folderId}' in parents and trashed=false\`);
-  const r = await fetch(\`https://www.googleapis.com/drive/v3/files?q=\${q}&fields=files(id)\`,
-    { headers: { Authorization: 'Bearer ' + driveToken.access_token }});
-  const data = await r.json();
-  return data.files && data.files.length > 0 ? data.files[0].id : null;
+function driveBuscarOuCriarPasta(){
+  var q = "mimeType='application/vnd.google-apps.folder' and name='" + DRIVE_FOLDER + "' and trashed=false";
+  return driveReq("https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent(q) + "&fields=files(id)")
+    .then(function(d){
+      if(d.files && d.files.length) return d.files[0].id;
+      return driveReq("https://www.googleapis.com/drive/v3/files", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({name:DRIVE_FOLDER, mimeType:"application/vnd.google-apps.folder"})
+      }).then(function(f){ return f.id; });
+    });
 }
-
-async function driveCriarArquivo(folderId, json){
-  const meta = JSON.stringify({ name: DRIVE_FILE_NAME, parents: [folderId] });
-  const form = new FormData();
-  form.append('metadata', new Blob([meta], {type:'application/json'}));
-  form.append('file',     new Blob([json], {type:'application/json'}));
-  return fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
-    { method:'POST', headers:{ Authorization:'Bearer '+driveToken.access_token }, body:form });
+function driveBuscarArquivo(fid){
+  var q = "name='" + DRIVE_FILE + "' and '" + fid + "' in parents and trashed=false";
+  return driveReq("https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent(q) + "&fields=files(id)")
+    .then(function(d){ return (d.files && d.files.length) ? d.files[0].id : null; });
 }
-
-async function driveAtualizarArquivo(fileId, json){
-  return fetch(\`https://www.googleapis.com/upload/drive/v3/files/\${fileId}?uploadType=media\`,
-    { method:'PATCH', headers:{ Authorization:'Bearer '+driveToken.access_token, 'Content-Type':'application/json' }, body:json });
+function driveCriarArquivo(fid, json){
+  var meta = JSON.stringify({name:DRIVE_FILE, parents:[fid]});
+  var form = new FormData();
+  form.append("metadata", new Blob([meta], {type:"application/json"}));
+  form.append("file",     new Blob([json], {type:"application/json"}));
+  return fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+    {method:"POST", headers:{Authorization:"Bearer "+driveToken.access_token}, body:form});
 }
-
-// Checar retorno OAuth ao carregar a página
+function driveAtualizarArquivo(fileId, json){
+  return fetch("https://www.googleapis.com/upload/drive/v3/files/"+fileId+"?uploadType=media",
+    {method:"PATCH", headers:{Authorization:"Bearer "+driveToken.access_token,"Content-Type":"application/json"}, body:json});
+}
 function driveVerificarCallback(){
-  const customId = localStorage.getItem('drive_client_id_custom');
-  // Atualizar DRIVE_CLIENT_ID dinamicamente se o usuário configurou
-  if(customId) window._DRIVE_CLIENT_ID_REAL = customId;
-
-  // Verificar token salvo
   driveCarregarToken();
   if(driveTokenValido()){ atualizarUILogin(true); return; }
-
-  // Verificar parâmetros de retorno OAuth na URL (hash ou query)
-  const params = new URLSearchParams(window.location.search);
-  const accessToken = params.get('access_token');
-  const expiresIn   = params.get('expires_in');
-  if(accessToken){
-    driveToken = { access_token: accessToken, expiry: Date.now() + (parseInt(expiresIn)||3600)*1000 };
-    localStorage.setItem('drive_token', JSON.stringify(driveToken));
-    // Limpar URL
+  var hash = window.location.hash.substring(1);
+  var params = new URLSearchParams(hash);
+  var token = params.get("access_token");
+  var exp   = params.get("expires_in");
+  if(token){
+    driveToken = {access_token:token, expiry:Date.now()+(parseInt(exp)||3600)*1000};
+    localStorage.setItem("drive_token", JSON.stringify(driveToken));
     window.history.replaceState({}, document.title, window.location.pathname);
     atualizarUILogin(true);
-    showToast('✅ Google Drive conectado!');
+    showToast("Google Drive conectado!");
     return;
   }
   atualizarUILogin(false);
@@ -1301,46 +1217,42 @@ driveVerificarCallback();
 </script>
 
 <script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load',function(){
-    navigator.serviceWorker.register('./sw.js')
-      .then(function(r){console.log('SW:',r.scope);})
-      .catch(function(e){console.warn('SW erro:',e);});
+if("serviceWorker" in navigator){
+  window.addEventListener("load",function(){
+    navigator.serviceWorker.register("./sw.js")
+      .then(function(r){console.log("SW ok",r.scope);})
+      .catch(function(e){console.warn("SW:",e);});
   });
 }
 var _dP=null;
-window.addEventListener('beforeinstallprompt',function(e){
+window.addEventListener("beforeinstallprompt",function(e){
   e.preventDefault(); _dP=e;
-  var b=document.getElementById('_ibtn');
-  if(b) b.style.display='flex';
+  var b=document.getElementById("_ibtn");
+  if(b) b.style.display="flex";
 });
-window.addEventListener('appinstalled',function(){
-  var b=document.getElementById('_ibtn');
-  if(b) b.style.display='none';
+window.addEventListener("appinstalled",function(){
+  var b=document.getElementById("_ibtn");
+  if(b) b.style.display="none";
   _dP=null;
 });
 function _instalar(){
-  if(!_dP){showToast('Abra pelo link no Chrome para instalar');return;}
+  if(!_dP){showToast("Abra pelo link no Chrome para instalar");return;}
   _dP.prompt();
   _dP.userChoice.then(function(r){
-    if(r.outcome==='accepted') showToast('App instalado!');
+    if(r.outcome==="accepted") showToast("App instalado!");
     _dP=null;
-    var b=document.getElementById('_ibtn');
-    if(b) b.style.display='none';
+    var b=document.getElementById("_ibtn");
+    if(b) b.style.display="none";
   });
 }
-window.addEventListener('DOMContentLoaded',function(){
-  var s=document.createElement('style');
-  s.textContent='@keyframes _pulse{0%,100%{opacity:1}50%{opacity:.7}}';
-  document.head.appendChild(s);
-  var b=document.createElement('button');
-  b.id='_ibtn';
-  b.innerHTML='&#128242; Instalar App';
-  b.style.cssText='display:none;position:fixed;bottom:68px;right:14px;z-index:9999;'
-    +'background:linear-gradient(135deg,#00C896,#0099FF);color:#000;border:none;'
-    +'border-radius:28px;padding:11px 20px;font-family:Outfit,sans-serif;font-size:.84rem;'
-    +'font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,200,150,.55);'
-    +'animation:_pulse 2s infinite;align-items:center;gap:8px;';
+window.addEventListener("DOMContentLoaded",function(){
+  var b=document.createElement("button");
+  b.id="_ibtn";
+  b.innerHTML="📲 Instalar App";
+  b.style.cssText="display:none;position:fixed;bottom:68px;right:14px;z-index:9999;"
+    +"background:linear-gradient(135deg,#00C896,#0099FF);color:#000;border:none;"
+    +"border-radius:28px;padding:11px 20px;font-family:Outfit,sans-serif;font-size:.84rem;"
+    +"font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,200,150,.55);";
   b.onclick=_instalar;
   document.body.appendChild(b);
 });
