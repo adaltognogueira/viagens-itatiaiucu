@@ -1,13 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#0F1923">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Viagens">
-  <link rel="apple-touch-icon" href="./icons/icon-192.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Viagens Itatiaiuçu</title>
@@ -174,6 +167,13 @@ table.viagens tr:hover td.col-day,table.viagens tr:hover td.col-lock{background:
   .sigla-btn{width:34px;height:24px;font-size:.68rem}
 }
 </style>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0F1923">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Viagens">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
 </head>
 <body>
 
@@ -1009,77 +1009,7 @@ function exportPDF(){
   html+=`<td>—</td><td>R$ ${tG.toFixed(2).replace('.',',')}</td></tr>`;
   html+=`</tbody></table>
   <p style="font-size:8.5px;color:#999;text-align:center;margin-top:16px">Legenda: ${state.percursos.map(p=>`${p.sigla}=${p.nome}`).join(' | ')}</p>
-  
-<script>
-// ═══ PWA: Service Worker ═══
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./sw.js')
-      .then(function(r){ console.log('SW ok:', r.scope); })
-      .catch(function(e){ console.log('SW erro:', e); });
-  });
-}
-
-// ═══ PWA: Botão Instalar (criado via JS para não quebrar strings HTML) ═══
-var deferredPrompt = null;
-
-window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault();
-  deferredPrompt = e;
-  var btn = document.getElementById('btn-pwa-install');
-  if (btn) btn.style.display = 'flex';
-});
-
-window.addEventListener('appinstalled', function() {
-  var btn = document.getElementById('btn-pwa-install');
-  if (btn) btn.style.display = 'none';
-  deferredPrompt = null;
-});
-
-function instalarPWA() {
-  if (!deferredPrompt) {
-    showToast('Use Chrome e acesse pelo link (não pelo arquivo local)');
-    return;
-  }
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(function(r) {
-    if (r.outcome === 'accepted') showToast('App instalado com sucesso!');
-    deferredPrompt = null;
-    var btn = document.getElementById('btn-pwa-install');
-    if (btn) btn.style.display = 'none';
-  });
-}
-
-// Criar botão instalar dinamicamente após página carregar
-window.addEventListener('DOMContentLoaded', function() {
-  var btn = document.createElement('button');
-  btn.id = 'btn-pwa-install';
-  btn.textContent = '📲 Instalar App';
-  btn.style.cssText = [
-    'display:none',
-    'position:fixed',
-    'bottom:72px',
-    'right:14px',
-    'z-index:999',
-    'background:linear-gradient(135deg,#00C896,#0099FF)',
-    'color:#000',
-    'border:none',
-    'border-radius:28px',
-    'padding:11px 20px',
-    'font-family:Outfit,sans-serif',
-    'font-size:.84rem',
-    'font-weight:700',
-    'cursor:pointer',
-    'align-items:center',
-    'gap:8px',
-    'box-shadow:0 4px 20px rgba(0,200,150,.55)'
-  ].join(';');
-  btn.onclick = instalarPWA;
-  document.body.appendChild(btn);
-});
-</script>
-
-</body></html>`;
+  </body></html>`;
 
   const janela=window.open('','_blank');
   janela.document.write(html); janela.document.close();
@@ -1125,6 +1055,52 @@ function showToast(msg){
 carregar();
 initMesSelects();
 renderTabela();
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('./sw.js')
+      .then(function(r){console.log('SW:',r.scope);})
+      .catch(function(e){console.warn('SW erro:',e);});
+  });
+}
+var _dP=null;
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault(); _dP=e;
+  var b=document.getElementById('_ibtn');
+  if(b) b.style.display='flex';
+});
+window.addEventListener('appinstalled',function(){
+  var b=document.getElementById('_ibtn');
+  if(b) b.style.display='none';
+  _dP=null;
+});
+function _instalar(){
+  if(!_dP){showToast('Abra pelo link no Chrome para instalar');return;}
+  _dP.prompt();
+  _dP.userChoice.then(function(r){
+    if(r.outcome==='accepted') showToast('App instalado!');
+    _dP=null;
+    var b=document.getElementById('_ibtn');
+    if(b) b.style.display='none';
+  });
+}
+window.addEventListener('DOMContentLoaded',function(){
+  var s=document.createElement('style');
+  s.textContent='@keyframes _pulse{0%,100%{opacity:1}50%{opacity:.7}}';
+  document.head.appendChild(s);
+  var b=document.createElement('button');
+  b.id='_ibtn';
+  b.innerHTML='&#128242; Instalar App';
+  b.style.cssText='display:none;position:fixed;bottom:68px;right:14px;z-index:9999;'
+    +'background:linear-gradient(135deg,#00C896,#0099FF);color:#000;border:none;'
+    +'border-radius:28px;padding:11px 20px;font-family:Outfit,sans-serif;font-size:.84rem;'
+    +'font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,200,150,.55);'
+    +'animation:_pulse 2s infinite;align-items:center;gap:8px;';
+  b.onclick=_instalar;
+  document.body.appendChild(b);
+});
 </script>
 </body>
 </html>
