@@ -173,6 +173,14 @@ table.viagens tr:hover td.col-day,table.viagens tr:hover td.col-lock{background:
   .page{padding:12px 10px}
   .sigla-btn{width:34px;height:24px;font-size:.68rem}
 }
+
+.obs-input{background:transparent;border:none;border-bottom:1px dashed var(--border);color:var(--text2);font-family:var(--font);font-size:.72rem;width:100%;padding:2px 4px;outline:none;min-width:80px;}
+.obs-input:focus{border-bottom-color:var(--accent);color:var(--text);}
+.obs-input.locked{pointer-events:none;opacity:.6;}
+.veiculo-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:8px;}
+.veiculo-table th{background:var(--bg3);color:var(--text2);padding:7px 10px;text-align:left;border:1px solid var(--border);font-size:.74rem;text-transform:uppercase;}
+.veiculo-table td{border:1px solid var(--border);padding:7px 10px;}
+.veiculo-table tr:last-child td{background:rgba(0,200,150,.08);font-weight:700;color:var(--accent);}
 </style>
 </head>
 <body>
@@ -244,6 +252,11 @@ table.viagens tr:hover td.col-day,table.viagens tr:hover td.col-lock{background:
 
   <div id="resumo-cards"></div>
   <div class="card"><div class="card-title">Total por Destino</div><div id="resumo-destinos"></div></div>
+  <div class="card" style="margin-top:4px">
+    <div class="card-title">Valor por Passageiro &#x2715; Veículo</div>
+    <p style="font-size:.78rem;color:var(--text2);margin-bottom:10px">Quanto cada passageiro deve repassar a cada veículo no mês.</p>
+    <div id="painel-veiculos"></div>
+  </div>
 
   <!-- ACUMULADO POR PERÍODO -->
   <div class="card" style="margin-top:20px">
@@ -475,7 +488,8 @@ function proximoMes(){
 function getDadosMes(mk){ if(!state.dados[mk])state.dados[mk]={}; return state.dados[mk]; }
 function getDadosDia(mk,dia){
   const dm=getDadosMes(mk);
-  if(!dm[dia]) dm[dia]={carro:'',locked:false,pass:{}};
+  if(!dm[dia]) dm[dia]={carro:'',locked:false,obs:'',pass:{}};
+  if(dm[dia].obs===undefined) dm[dia].obs='';
   state.passageiros.forEach(p=>{ if(!dm[dia].pass[p.nome]) dm[dia].pass[p.nome]={I:'',V:''}; });
   return dm[dia];
 }
@@ -508,9 +522,11 @@ function renderTabela(){
   html+='<th class="col-day">DIA</th>';
   html+='<th class="col-car">CARRO</th>';
   state.passageiros.forEach(p=>{ html+=`<th colspan="2">${p.inicial}</th>`; });
+  html+='<th style="min-width:90px">OBS</th>';
   html+='</tr><tr>';
   html+='<th></th><th></th><th></th>';
   state.passageiros.forEach(()=>{ html+='<th style="font-size:.68rem;color:#00C896">I</th><th style="font-size:.68rem;color:#FF8C42">V</th>'; });
+  html+='<th></th>';
   html+='</tr></thead><tbody>';
 
   for(let d=1;d<=dias;d++){
@@ -548,6 +564,13 @@ function renderTabela(){
         }
       });
     });
+    // OBS
+    const obsVal=(dd2.obs||'').replace(/"/g,'&quot;');
+    if(locked){
+      html+=`<td><span class="obs-input locked">${dd2.obs||''}</span></td>`;
+    } else {
+      html+=`<td><input class="obs-input" type="text" maxlength="80" placeholder="obs..." value="${obsVal}" onchange="setObs('${mk}','${dd}',this.value)"></td>`;
+    }
     html+=`</tr>`;
   }
   html+='</tbody>';
@@ -555,7 +578,8 @@ function renderTabela(){
   renderLegenda();
 }
 
-function setCarro(mk,dia,val){ getDadosDia(mk,dia).carro=val; salvar(); }
+function setCarro(mk,dia,val){ getDadosDia(mk,dia).carro=val; salvar(); driveBackupSilencioso(); }
+function setObs(mk,dia,val){ getDadosDia(mk,dia).obs=val; salvar(); driveBackupSilencioso(); }
 
 function toggleLock(mk,dia){
   const dd=getDadosDia(mk,dia);
@@ -599,6 +623,7 @@ function setSigla(val){
   const {mk,dia,passNome,tipo}=modalCtx;
   getDadosDia(mk,dia).pass[passNome][tipo]=val;
   salvar();
+  driveBackupSilencioso();
   document.getElementById('modal-sigla').classList.remove('open');
   modalCtx=null;
   renderTabela();
@@ -622,10 +647,11 @@ function calcTotais(mk){
   const dias=diasNoMes(y,m);
   const dm=getDadosMes(mk);
   const totais={};
-  state.passageiros.forEach(p=>{ totais[p.nome]={total:0,perc:{}}; state.percursos.forEach(pc=>{ totais[p.nome].perc[pc.sigla]={I:0,V:0}; }); });
+  state.passageiros.forEach(p=>{ totais[p.nome]={total:0,perc:{},porCarro:{}}; state.percursos.forEach(pc=>{ totais[p.nome].perc[pc.sigla]={I:0,V:0}; }); });
   for(let d=1;d<=dias;d++){
     const dd=String(d).padStart(2,'0');
     const dadosDia=dm[dd]; if(!dadosDia)continue;
+    const carro=dadosDia.carro||'';
     state.passageiros.forEach(p=>{
       const pv=dadosDia.pass?.[p.nome]; if(!pv)return;
       ['I','V'].forEach(tipo=>{
@@ -635,6 +661,7 @@ function calcTotais(mk){
         if(!totais[p.nome].perc[sig]) totais[p.nome].perc[sig]={I:0,V:0};
         totais[p.nome].perc[sig][tipo]++;
         totais[p.nome].total+=perc.valor;
+        if(carro){ if(!totais[p.nome].porCarro[carro]) totais[p.nome].porCarro[carro]=0; totais[p.nome].porCarro[carro]+=perc.valor; }
       });
     });
   }
@@ -653,10 +680,12 @@ function renderPainel(){
       const c=getCor(i); const cnt=(t.perc[pc.sigla]?.I||0)+(t.perc[pc.sigla]?.V||0);
       if(cnt>0) det+=`<span class="r-sigla" style="background:${c.bg};color:${c.text}">${pc.sigla}</span>${cnt}x<br>`;
     });
+    let detCarro='';
+    Object.entries(t.porCarro).forEach(([c,v])=>{ if(v>0) detCarro+=`<span style="font-size:.68rem;color:var(--warn)">🚗 ${c}:</span> R$ ${v.toFixed(2).replace('.',',')}<br>`; });
     html+=`<div class="resumo-card">
       <div class="r-nome">${p.inicial} — ${p.nome}</div>
       <div class="r-total">R$ ${t.total.toFixed(2).replace('.',',')} <small>(${viagens}x)</small></div>
-      <div class="r-detail">${det||'<span style="color:var(--text3)">Sem viagens</span>'}</div>
+      <div class="r-detail">${det||'<span style="color:var(--text3)">Sem viagens</span>'}${detCarro?'<hr style="border-color:var(--border);margin:4px 0">'+detCarro:''}</div>
     </div>`;
   });
   html+='</div>';
@@ -680,6 +709,34 @@ function renderPainel(){
     <div style="font-size:1.1rem;font-weight:800;color:var(--accent)">R$ ${totalG.toFixed(2).replace('.',',')}</div>
   </div></div>`;
   document.getElementById('resumo-destinos').innerHTML=hd;
+  renderTabelaVeiculos(mk,totais);
+}
+
+function renderTabelaVeiculos(mk,totais){
+  const el=document.getElementById('painel-veiculos');
+  if(!el) return;
+  const {y,m}=parseMesKey(mk);
+  const dias=diasNoMes(y,m);
+  const dm=getDadosMes(mk);
+  const carrosUsados=new Set();
+  for(let d=1;d<=dias;d++){ const dd=String(d).padStart(2,'0'); const c=dm[dd]?.carro; if(c) carrosUsados.add(c); }
+  if(!carrosUsados.size){ el.innerHTML='<p style="color:var(--text2);font-size:.82rem">Nenhum veículo registrado neste mês.</p>'; return; }
+  let h='<div style="overflow-x:auto"><table class="veiculo-table"><thead><tr><th>PASSAGEIRO</th>';
+  carrosUsados.forEach(c=>{ h+=`<th>${c}</th>`; });
+  h+='<th>TOTAL</th></tr></thead><tbody>';
+  const totCarro={}; carrosUsados.forEach(c=>{ totCarro[c]=0; }); let totGeral=0;
+  state.passageiros.forEach(p=>{
+    const t=totais[p.nome]; let rowTot=0;
+    h+=`<tr><td><strong>${p.nome}</strong> <span style="color:var(--text2);font-size:.72rem">${p.inicial}</span></td>`;
+    carrosUsados.forEach(c=>{ const v=t.porCarro[c]||0; totCarro[c]+=v; rowTot+=v; h+=`<td>${v>0?'R$ '+v.toFixed(2).replace('.',','):'-'}</td>`; });
+    totGeral+=rowTot;
+    h+=`<td>R$ ${rowTot.toFixed(2).replace('.',',')}</td></tr>`;
+  });
+  h+='<tr><td>TOTAL POR VEÍCULO</td>';
+  carrosUsados.forEach(c=>{ h+=`<td>R$ ${totCarro[c].toFixed(2).replace('.',',')}</td>`; });
+  h+=`<td>R$ ${totGeral.toFixed(2).replace('.',',')}</td></tr>`;
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
 }
 
 // ═══════════════════════════════════════
@@ -944,6 +1001,25 @@ function atualizarUILogin(ok){
     box.style.color       = "#7AAFFF";
     txt.innerHTML = "<strong style='color:#90C4FF'>🔌 Google Drive não conectado</strong><br>Conecte sua conta para backup automático.";
   }
+}
+function driveBackupSilencioso(){
+  if(!driveTokenValido()) return;
+  clearTimeout(window._bkTimer);
+  window._bkTimer=setTimeout(function(){
+    driveBuscarOuCriarPasta()
+      .then(function(fid){ return Promise.all([fid,driveBuscarArquivo(fid)]); })
+      .then(function(res){
+        var fid=res[0]; var fileId=res[1];
+        var json=JSON.stringify(state,null,2);
+        return fileId ? driveAtualizarArquivo(fileId,json) : driveCriarArquivo(fid,json);
+      })
+      .then(function(){
+        state.ultimoBackupDrive=new Date().toISOString(); salvar();
+        var el=document.getElementById('ultimo-backup-drive');
+        if(el) el.textContent='☁️ Drive: '+new Date().toLocaleString('pt-BR');
+      })
+      .catch(function(e){ console.warn('Backup auto:',e); });
+  },3000);
 }
 function driveBackupAuto(){
   if(!driveTokenValido()){ showToast("Reconecte o Google Drive!"); atualizarUILogin(false); return; }
