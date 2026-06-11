@@ -181,6 +181,12 @@ table.viagens tr:hover td.col-day,table.viagens tr:hover td.col-lock{background:
 .veiculo-table th{background:var(--bg3);color:var(--text2);padding:7px 10px;text-align:left;border:1px solid var(--border);font-size:.74rem;text-transform:uppercase;}
 .veiculo-table td{border:1px solid var(--border);padding:7px 10px;}
 .veiculo-table tr:last-child td{background:rgba(0,200,150,.08);font-weight:700;color:var(--accent);}
+
+/* CADEADO PERCURSOS */
+.perc-locked{opacity:.45;pointer-events:none;user-select:none;filter:blur(1px)}
+.lock-perc-btn{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);font-family:var(--font);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s}
+.lock-perc-btn:hover{border-color:var(--warn);color:var(--warn)}
+.lock-perc-btn.locked{border-color:var(--danger);color:var(--danger);background:rgba(255,76,106,.1)}
 </style>
 </head>
 <body>
@@ -213,6 +219,7 @@ table.viagens tr:hover td.col-day,table.viagens tr:hover td.col-lock{background:
     </div>
   </div>
 </div>
+
 
 <div class="toast" id="toast"></div>
 
@@ -313,15 +320,17 @@ table.viagens tr:hover td.col-day,table.viagens tr:hover td.col-lock{background:
 
     <!-- PERCURSOS / VALORES -->
     <div class="config-section">
-      <h3>📍 Percursos e Valores</h3>
+      <h3 style="display:flex;align-items:center;gap:10px">📍 Percursos e Valores<button id="btn-lock-perc" class="lock-perc-btn" onclick="percToggleLock()" style="margin-left:auto">🔓 Livre</button></h3>
       <p style="font-size:.8rem;color:var(--text2);margin-bottom:12px">Cada percurso tem uma sigla, nome e valor. As cores são atribuídas automaticamente.</p>
-      <div id="lista-percursos"></div>
-      <div style="margin-top:12px">
-        <div class="add-row">
-          <input type="text" id="novo-perc-sigla" placeholder="Sigla (ex: BH)" maxlength="4" style="width:80px;flex:none">
-          <input type="text" id="novo-perc-nome"  placeholder="Nome do percurso" maxlength="25">
-          <input type="number" id="novo-perc-valor" placeholder="Valor R$" step="0.01" style="width:100px;flex:none">
-          <button class="btn-sm accent" onclick="adicionarPercurso()">+ Adicionar</button>
+      <div id="perc-lockable">
+        <div id="lista-percursos"></div>
+        <div style="margin-top:12px">
+          <div class="add-row">
+            <input type="text" id="novo-perc-sigla" placeholder="Sigla (ex: BH)" maxlength="4" style="width:80px;flex:none">
+            <input type="text" id="novo-perc-nome"  placeholder="Nome do percurso" maxlength="25">
+            <input type="number" id="novo-perc-valor" placeholder="Valor R$" step="0.01" style="width:100px;flex:none">
+            <button class="btn-sm accent" onclick="adicionarPercurso()">+ Adicionar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -902,11 +911,14 @@ function renderConfig(){
       +`<span class="color-swatch" style="background:${c.hex}"></span>`
       +`<strong style="color:${c.text}">${p.sigla}</strong>`
       +`<span style="color:var(--text)">${p.nome}</span>`
-      +`<span style="margin-left:auto;cursor:pointer;color:var(--accent);font-size:.78rem;font-weight:600" onclick="adicionarTarifa(${i})">+ Nova tarifa</span>`
-      +`<span class="tag-del" onclick="removerPercurso(${i})">×</span>`
+      +`<span style="margin-left:auto;display:flex;align-items:center;gap:8px">`
+      +(!p._novo ? `<span style="cursor:pointer;color:var(--accent);font-size:.78rem;font-weight:600" onclick="adicionarTarifa(${i})">+ Nova tarifa</span>` : `<span style="color:var(--warn);font-size:.72rem">⚠️ Salve primeiro</span>`)
+      +`<button onclick="removerPercurso(${i})" style="background:rgba(255,76,106,.15);border:1px solid var(--danger);color:var(--danger);border-radius:6px;padding:3px 10px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:var(--font)">🗑 Excluir</button>`
+      +`</span>`
       +`</div>`
-      +`<div style="font-size:.72rem;color:var(--text2);margin-bottom:6px">Histórico de tarifas (data de início → valor):</div>`
-      +tarifaHTML
+      +(p._novo
+        ? `<div style="background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.4);border-radius:8px;padding:8px 12px;font-size:.78rem;color:#FFD580;margin-bottom:8px">⚠️ Clique em <strong>Salvar Configurações</strong> antes de editar as tarifas deste percurso.</div>`
+        : `<div style="font-size:.72rem;color:var(--text2);margin-bottom:6px">Histórico de tarifas (data de início → valor):</div>`+tarifaHTML)
       +`</div>`;
   }).join('');
 
@@ -971,18 +983,23 @@ function adicionarPercurso(){
   if(!sigla||!nome){showToast('Preencha sigla e nome!');return;}
   if(state.percursos.find(p=>p.sigla===sigla)){showToast('Sigla já existe!');return;}
   const inicio=new Date().toISOString().slice(0,10);
-  state.percursos.push({sigla,nome,tarifas:[{inicio,valor}]});
+  state.percursos.push({sigla,nome,tarifas:[{inicio,valor}],_novo:true});
   document.getElementById('novo-perc-sigla').value='';
   document.getElementById('novo-perc-nome').value='';
   document.getElementById('novo-perc-valor').value='';
-  renderConfig(); salvar(); showToast(`Percurso ${sigla} adicionado!`);
+  renderConfig(); salvar();
+  showToast('Percurso adicionado! Clique em Salvar Configurações antes de editar as tarifas.');
 }
 function removerPercurso(i){
   if(state.percursos.length<=1){showToast('Mínimo 1 percurso!');return;}
   confirmAction(`Remover percurso ${state.percursos[i].sigla}?`,'Registros existentes com esta sigla serão mantidos nos dados.',()=>{ state.percursos.splice(i,1); renderConfig(); salvar(); });
 }
 
-function salvarConfig(){ salvar(); initMesSelects(); renderTabela(); renderConfig(); showToast('Configurações salvas! ✓'); }
+function salvarConfig(){
+  state.percursos.forEach(p=>{ delete p._novo; });
+  salvar(); initMesSelects(); renderTabela(); renderConfig();
+  showToast('Configurações salvas! ✓');
+}
 
 // ═══════════════════════════════════════
 // BACKUP / RESTORE
@@ -1383,11 +1400,43 @@ function showToast(msg){
 // ═══════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════
+
+// ═══════════════════════════════════════
+// CADEADO PERCURSOS (sem senha)
+// ═══════════════════════════════════════
+var _percLocked = false;
+
+function percCarregarEstado(){
+  _percLocked = localStorage.getItem('perc_locked') === '1';
+  percAtualizarUI();
+}
+function percAtualizarUI(){
+  var el  = document.getElementById('perc-lockable');
+  var btn = document.getElementById('btn-lock-perc');
+  if(!el||!btn) return;
+  if(_percLocked){
+    el.classList.add('perc-locked');
+    btn.innerHTML = '🔒 Bloqueado';
+    btn.classList.add('locked');
+  } else {
+    el.classList.remove('perc-locked');
+    btn.innerHTML = '🔓 Livre';
+    btn.classList.remove('locked');
+  }
+}
+function percToggleLock(){
+  _percLocked = !_percLocked;
+  localStorage.setItem('perc_locked', _percLocked ? '1' : '0');
+  percAtualizarUI();
+  showToast(_percLocked ? '🔒 Percursos bloqueados!' : '🔓 Percursos desbloqueados!');
+}
+
 carregar();
 migrarPercursos();
 initMesSelects();
 renderTabela();
 driveVerificarCallback();
+percCarregarEstado();
 </script>
 
 <script>
